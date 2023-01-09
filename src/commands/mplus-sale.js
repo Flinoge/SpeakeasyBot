@@ -96,9 +96,9 @@ export default {
       (emoji) => emoji.name === "havekey"
     );
     try {
-      await message.react(dps);
-      await message.react(healer);
       await message.react(tank);
+      await message.react(healer);
+      await message.react(dps);
       await message.react(havekey);
     } catch (e) {
       console.log("Error Reacting on message.");

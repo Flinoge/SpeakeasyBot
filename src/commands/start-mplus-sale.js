@@ -1,6 +1,16 @@
-import { SlashCommandBuilder, EmbedBuilder } from "discord.js";
+import {
+  SlashCommandBuilder,
+  EmbedBuilder,
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+} from "discord.js";
 import Run from "../models/run.js";
+import User from "../models/user.js";
 import moment from "moment";
+import { mentionToId } from "../utils/methods.js";
+import config from "../config.js";
+import Client from "../discord.js";
 
 export default {
   data: new SlashCommandBuilder()
@@ -9,7 +19,7 @@ export default {
     .addStringOption((option) =>
       option
         .setName("run")
-        .setDescription("Run to complete")
+        .setDescription("Run to start")
         .setAutocomplete(true)
         .setRequired(true)
     )
@@ -90,6 +100,7 @@ export default {
             )
             .map(async (user) => {
               let member = await interaction.guild.members.fetch(user.id);
+              checkMember(user);
               return {
                 name: member.displayName || user.username,
                 value: user.toString(),
@@ -119,6 +130,7 @@ export default {
       const dps1 = interaction.options.getString("dps1");
       const dps2 = interaction.options.getString("dps2");
       const keyholder = interaction.options.getString("havekey");
+      const possibleReactors = [tank, healer, dps1, dps2];
       const messageEmbed = new EmbedBuilder()
         .setColor(0x0099ff)
         .setTitle("M+ Sale")
@@ -151,10 +163,67 @@ export default {
         embeds: [messageEmbed],
       });
       try {
-        const check = run.guild.emojis.cache.find(
-          (emoji) => emoji.id === "1060710679335678084"
-        );
-        await run.react(check);
+        runDB.status = "Started";
+        runDB.participants = [
+          {
+            id: mentionToId(tank),
+            cut: runDB.settings.cuts,
+          },
+          {
+            id: mentionToId(healer),
+            cut: runDB.settings.cuts,
+          },
+          {
+            id: mentionToId(dps1),
+            cut: runDB.settings.cuts,
+          },
+          {
+            id: mentionToId(dps2),
+            cut: runDB.settings.cuts,
+          },
+        ];
+        await runDB.save();
+        await run.react("✅");
+        const filter = (reaction, user) => {
+          return (
+            ["✅"].includes(reaction.emoji.name) &&
+            possibleReactors.indexOf(user.toString()) !== -1
+          );
+        };
+        run
+          .awaitReactions({ filter, max: 1, time: 5400000, errors: ["time"] })
+          .then(async (collected) => {
+            const reaction = collected.first();
+
+            if (reaction.emoji.name === "✅") {
+              runDB.status = "Awaiting Approval";
+              runDB.save();
+              const channel = Client.channels.cache.get(config.admin_channel);
+              const row = new ActionRowBuilder().addComponents(
+                new ButtonBuilder()
+                  .setCustomId("complete-run")
+                  .setLabel("Approve")
+                  .setStyle(ButtonStyle.Primary)
+              );
+              channel.send({
+                content: `There is a run waiting approval. ${run.url}`,
+                components: [row],
+              });
+            }
+          })
+          .catch((collected) => {
+            const channel = Client.channels.cache.get(config.admin_channel);
+            const row = new ActionRowBuilder().addComponents(
+              new ButtonBuilder()
+                .setCustomId("complete-run")
+                .setLabel("Approve")
+                .setStyle(ButtonStyle.Primary)
+            );
+            channel.send({
+              content: `There is a run that has been going for 1.5 Hours and isn't completed. ${run.url}`,
+              components: [row],
+            });
+          });
       } catch (e) {
         console.log(e);
         console.log("Error Reacting on message.");
@@ -167,4 +236,26 @@ export default {
       });
     }
   },
+};
+
+const checkMember = async (user) => {
+  const userDB = await User.findOne({ id: user.id });
+  if (!userDB) {
+    await User.create({
+      id: user.id,
+      balance: 0,
+      settings: {
+        username: user.username,
+        avatarURL: user.avatarURL(),
+      },
+      createdBy: {
+        username: user.username,
+        id: user.id,
+      },
+      updatedBy: {
+        username: user.username,
+        id: user.id,
+      },
+    });
+  }
 };

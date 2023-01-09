@@ -7,11 +7,20 @@ import {
   REST,
   Routes,
   Collection,
+  Partials,
 } from "discord.js";
 import fs from "node:fs";
 // Create a new client instance
-const client = new Client({ intents: [GatewayIntentBits.Guilds] });
+const client = new Client({
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.GuildMessageReactions,
+  ],
+  partials: [Partials.Message, Partials.Channel, Partials.Reaction],
+});
 client.commands = new Collection();
+client.buttons = new Collection();
 // Log in to Discord with your client's token
 client.login(config.token);
 export default client;
@@ -74,6 +83,15 @@ const registerAll = async () => {
     } else {
       client.on(event.name, (...args) => event.execute(...args));
     }
+  }
+
+  /// Buttons Section
+  const buttonFiles = fs
+    .readdirSync("./src/buttons")
+    .filter((file) => file.endsWith(".js"));
+  for (const file of buttonFiles) {
+    const button = (await import(`./buttons/${file}`)).default;
+    client.buttons.set(button.data.name, button);
   }
 };
 

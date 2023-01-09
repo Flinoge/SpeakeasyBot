@@ -52,6 +52,24 @@ export default {
       } catch (error) {
         console.error(error);
       }
+    } else if (interaction.isButton()) {
+      const button = interaction.client.buttons.get(interaction.customId);
+
+      if (!button) {
+        console.error(`No command matching ${interaction.customId} was found.`);
+        return;
+      }
+
+      try {
+        if (hasAccess) {
+          await button.execute(interaction);
+        } else {
+          await interaction.deferReply();
+          await interaction.deleteReply();
+        }
+      } catch (error) {
+        console.error(error);
+      }
     }
   },
 };

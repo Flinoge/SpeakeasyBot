@@ -2,16 +2,14 @@ import mongoose from "mongoose";
 
 const types = ["M+"];
 
-const stati = ["Pending", "Started", "Done"];
+const stati = ["Pending", "Started", "Awaiting Approval", "Done"];
 
 const Schema = new mongoose.Schema({
   type: { type: String, required: true, enum: types },
   gold: { type: Number, required: true },
   participants: [
     {
-      displayName: { type: String, required: true },
-      discordId: { type: String, required: true },
-      tag: { type: String, required: true },
+      id: { type: String, required: true },
       cut: { type: Number, required: true },
     },
   ],

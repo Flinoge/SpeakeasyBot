@@ -24,6 +24,7 @@ export default {
   env: process.env.NODE_ENV || "development",
   client_id: process.env.DISCORD_CLIENT_ID || "",
   guild_id: process.env.DISCORD_DEV_SERVER || "",
+  admin_channel: process.env.DISCORD_ADMIN_CHANNEL || "",
   mongo: {
     uri: `mongodb+srv://${process.env.MONGO_USERNAME}:${process.env.MONGO_PASSWORD}@${process.env.MONGO_DATABASE}/?retryWrites=true&w=majority`,
     port: process.env.MONGO_PORT || 27017,
