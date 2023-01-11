@@ -6,7 +6,7 @@ import morgan from "morgan";
 import bodyParser from "body-parser";
 import discord from "./src/discord.js";
 import "./src/mongo.js";
-import { disconnect } from "./src/mongo.js";
+import { disconnect, loadTestData } from "./src/mongo.js";
 
 const app = express();
 app.use(bodyParser.json());
@@ -28,6 +28,14 @@ const corsOptions = {
   },
 };
 app.use(cors(corsOptions));
+
+//Test Environment will manage its own data
+if (config.env === "development") {
+  loadTestData("./db/mongo/db.js").catch((ex) => {
+    console.error(ex);
+    console.error("Unable to load test data.");
+  });
+}
 
 // TODO Generate a session/token
 // app.use(async (req, res, next) => {

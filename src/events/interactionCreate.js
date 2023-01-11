@@ -1,16 +1,11 @@
-import { Events, PermissionsBitField } from "discord.js";
-import { curatorRole, adminPermission } from "../discord.js";
+import { Events } from "discord.js";
+import { hasPermission, hasRole } from "../utils/methods.js";
+import { security } from "../utils/constants.js";
 
 export default {
   name: Events.InteractionCreate,
   async execute(interaction) {
-    const hasAccess =
-      interaction.member.roles.cache.some(
-        (role) => role.name === curatorRole
-      ) ||
-      interaction.member.permissions.has([
-        PermissionsBitField[adminPermission],
-      ]);
+    let individualAccess = true;
     if (interaction.isChatInputCommand()) {
       const command = interaction.client.commands.get(interaction.commandName);
 
@@ -22,12 +17,27 @@ export default {
       }
 
       try {
-        if (hasAccess) {
-          await command.execute(interaction);
-        } else {
-          await interaction.deferReply();
-          await interaction.deleteReply();
+        await interaction.deferReply();
+        await interaction.deleteReply();
+        if (command.permission) {
+          if (
+            !hasPermission(
+              interaction,
+              security.permissions[command.permission]
+            )
+          ) {
+            individualAccess = false;
+          }
         }
+        if (command.role) {
+          if (!hasRole(interaction, security.roles[command.role])) {
+            individualAccess = false;
+          }
+        }
+        if (!individualAccess) {
+          return;
+        }
+        await command.execute(interaction);
       } catch (error) {
         console.error(`Error executing ${interaction.commandName}`);
         console.error(error);
@@ -43,12 +53,25 @@ export default {
       }
 
       try {
-        if (hasAccess) {
-          await command.autocomplete(interaction);
-        } else {
-          await interaction.deferReply();
-          await interaction.deleteReply();
+        if (command.permission) {
+          if (
+            !hasPermission(
+              interaction,
+              security.permissions[command.permission]
+            )
+          ) {
+            individualAccess = false;
+          }
         }
+        if (command.role) {
+          if (!hasRole(interaction, security.roles[command.role])) {
+            individualAccess = false;
+          }
+        }
+        if (!individualAccess) {
+          return;
+        }
+        await command.autocomplete(interaction);
       } catch (error) {
         console.error(error);
       }
@@ -61,12 +84,24 @@ export default {
       }
 
       try {
-        if (hasAccess) {
-          await button.execute(interaction);
-        } else {
-          await interaction.deferReply();
-          await interaction.deleteReply();
+        await interaction.deferReply();
+        await interaction.deleteReply();
+        if (button.permission) {
+          if (
+            !hasPermission(interaction, security.permissions[button.permission])
+          ) {
+            individualAccess = false;
+          }
         }
+        if (button.role) {
+          if (!hasRole(interaction, security.roles[button.role])) {
+            individualAccess = false;
+          }
+        }
+        if (!individualAccess) {
+          return;
+        }
+        await button.execute(interaction);
       } catch (error) {
         console.error(error);
       }

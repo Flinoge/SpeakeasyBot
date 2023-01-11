@@ -6,6 +6,7 @@ const stati = ["Pending", "Started", "Awaiting Approval", "Done"];
 
 const Schema = new mongoose.Schema({
   type: { type: String, required: true, enum: types },
+  server: { type: String, required: true },
   gold: { type: Number, required: true },
   participants: [
     {

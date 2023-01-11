@@ -13,6 +13,7 @@ import config from "../config.js";
 import Client from "../discord.js";
 
 export default {
+  role: "curator",
   data: new SlashCommandBuilder()
     .setName("start-mplus-sale")
     .setDescription("Start a M+ Sale Run")
@@ -79,18 +80,24 @@ export default {
       );
       if (run) {
         const otherRoles = [];
-        // const otherRoles = [
-        //   interaction.options.getString("tank"),
-        //   interaction.options.getString("healer"),
-        //   interaction.options.getString("dps1"),
-        //   interaction.options.getString("dps2"),
-        // ];
         let role = JSON.parse(JSON.stringify(focusedOption.name));
         if (role === "dps1" || role === "dps2") role = "dps";
         const reaction = await run.reactions.cache.find(
           (r) => r.emoji.name === role
         );
         let reactedUsers = await reaction.users.fetch();
+        // TODO Uncomment once testing for more than 1 user
+        // const otherRoles = [
+        //   interaction.options.getString("tank"),
+        //   interaction.options.getString("healer"),
+        //   interaction.options.getString("dps1"),
+        //   interaction.options.getString("dps2"),
+        // ];
+        // if (role.name === "havekey") {
+        //   reactedUsers = reactedUsers.filter(
+        //     (user) => otherRoles.indexOf(user.id) !== -1
+        //   );
+        // }
         const users = await Promise.all(
           reactedUsers
             .filter(
@@ -123,15 +130,13 @@ export default {
     });
     if (run && runDB) {
       await run.reactions.removeAll();
-      await interaction.deferReply();
-      await interaction.deleteReply();
       const tank = interaction.options.getString("tank");
       const healer = interaction.options.getString("healer");
       const dps1 = interaction.options.getString("dps1");
       const dps2 = interaction.options.getString("dps2");
       const keyholder = interaction.options.getString("havekey");
       const possibleReactors = [tank, healer, dps1, dps2];
-      const messageEmbed = new EmbedBuilder()
+      let messageEmbed = new EmbedBuilder()
         .setColor(0x0099ff)
         .setTitle("M+ Sale")
         .setAuthor({
@@ -156,7 +161,7 @@ export default {
         )
         .setTimestamp()
         .setFooter({
-          text: "Get with me, and react when run is done.",
+          text: "React when run is done.",
           iconURL: interaction.member.user.avatarURL(),
         });
       await run.edit({
@@ -194,10 +199,45 @@ export default {
           .awaitReactions({ filter, max: 1, time: 5400000, errors: ["time"] })
           .then(async (collected) => {
             const reaction = collected.first();
+            console.log(reaction);
 
             if (reaction.emoji.name === "✅") {
+              messageEmbed = new EmbedBuilder()
+                .setColor(0x0099ff)
+                .setTitle("M+ Sale")
+                .setAuthor({
+                  name: interaction.member.user.tag,
+                  iconURL: interaction.member.user.avatarURL(),
+                })
+                .setThumbnail(interaction.member.user.avatarURL())
+                .addFields(
+                  {
+                    name: `${
+                      runDB.settings.key ? `${runDB.settings.key} ` : ""
+                    }+${runDB.settings.level} `,
+                    value: `${runDB.settings.cuts}k cuts`,
+                  },
+                  {
+                    name: "Run Completed Time",
+                    value: `${moment().format("YYYY-M-D h:m")}`,
+                  },
+                  { name: "\u200B", value: "\u200B" },
+                  { name: "Tank", value: `${tank}`, inline: true },
+                  { name: "Healer", value: `${healer}`, inline: true },
+                  { name: "DPS", value: `${dps1}`, inline: true },
+                  { name: "DPS", value: `${dps2}`, inline: true },
+                  { name: "Key Holder", value: `${keyholder}`, inline: true }
+                )
+                .setTimestamp()
+                .setFooter({
+                  text: `This has been marked done by ${interaction.member.user.tag} and is awaiting approval.`,
+                  iconURL: interaction.member.user.avatarURL(),
+                });
+              await run.edit({
+                embeds: [messageEmbed],
+              });
               runDB.status = "Awaiting Approval";
-              runDB.save();
+              await runDB.save();
               const channel = Client.channels.cache.get(config.admin_channel);
               const row = new ActionRowBuilder().addComponents(
                 new ButtonBuilder()
@@ -205,9 +245,15 @@ export default {
                   .setLabel("Approve")
                   .setStyle(ButtonStyle.Primary)
               );
+              const row2 = new ActionRowBuilder().addComponents(
+                new ButtonBuilder()
+                  .setCustomId("complete-and-payout-run")
+                  .setLabel("Approve w/ Payouts")
+                  .setStyle(ButtonStyle.Primary)
+              );
               channel.send({
                 content: `There is a run waiting approval. ${run.url}`,
-                components: [row],
+                components: [row, row2],
               });
             }
           })
@@ -219,9 +265,15 @@ export default {
                 .setLabel("Approve")
                 .setStyle(ButtonStyle.Primary)
             );
+            const row2 = new ActionRowBuilder().addComponents(
+              new ButtonBuilder()
+                .setCustomId("complete-and-payout-run")
+                .setLabel("Approve w/ Payouts")
+                .setStyle(ButtonStyle.Primary)
+            );
             channel.send({
               content: `There is a run that has been going for 1.5 Hours and isn't completed. ${run.url}`,
-              components: [row],
+              components: [row, row2],
             });
           });
       } catch (e) {

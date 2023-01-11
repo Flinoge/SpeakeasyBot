@@ -1,7 +1,11 @@
 import { SlashCommandBuilder, EmbedBuilder } from "discord.js";
 import Run from "../models/run.js";
+import Bank from "../models/bank.js";
+import { cuts } from "../utils/constants.js";
+import { availableServers, sendCommandError } from "../utils/methods.js";
 
 export default {
+  role: "curator",
   data: new SlashCommandBuilder()
     .setName("mplus-sale")
     .setDescription("Create a M+ Sale Run")
@@ -13,8 +17,9 @@ export default {
     )
     .addStringOption((option) =>
       option
-        .setName("realm")
-        .setDescription("The Realm Availability of Gold")
+        .setName("server")
+        .setDescription("The Server the Gold is Located")
+        .setAutocomplete(true)
         .setRequired(true)
     )
     .addStringOption((option) =>
@@ -32,15 +37,35 @@ export default {
     .addStringOption((option) =>
       option.setName("key").setDescription("The key of the M+ Sale (Optional)")
     ),
+  async autocomplete(interaction) {
+    const focusedOption = interaction.options.getFocused(true);
+    const focusedValue = focusedOption.value;
+    if (focusedOption.name === "server") {
+      let banks = await Bank.find({
+        server: { $regex: `.*${focusedValue}.*` },
+      });
+      let servers = banks.map((b) => ({ name: b.server, value: b.server }));
+      await interaction.respond(servers);
+    }
+  },
   async execute(interaction) {
-    await interaction.deferReply();
-    await interaction.deleteReply();
     const gold = interaction.options.getNumber("gold");
-    const cuts = (gold * 0.9) / 4;
-    const realm = interaction.options.getString("realm");
+    const boosterCuts = gold * cuts["M+"].booster;
+    const server = interaction.options.getString("server");
     const availability = interaction.options.getString("availability");
     const level = interaction.options.getNumber("level");
     const key = interaction.options.getString("key") || false;
+    let servers = await availableServers();
+    let serverIndex = servers.find((s) => s.server === server);
+    if (!serverIndex) {
+      sendCommandError(
+        interaction.user,
+        "Server specified is not among available servers."
+      );
+      return;
+    } else {
+      serverIndex.amount = serverIndex.amount + gold;
+    }
     const messageEmbed = new EmbedBuilder()
       .setColor(0x0099ff)
       .setTitle("M+ Sale")
@@ -50,9 +75,21 @@ export default {
       })
       .setThumbnail(interaction.member.user.avatarURL())
       .addFields(
-        { name: `${key ? `${key} ` : ""}+${level} `, value: `${cuts}k cuts` },
+        {
+          name: `${key ? `${key} ` : ""}+${level} `,
+          value: `${boosterCuts}k cuts`,
+        },
         { name: "\u200B", value: "\u200B" },
-        { name: "Realm Availability", value: `${realm}`, inline: true },
+        {
+          name: "Realm Availability",
+          value: `${servers
+            .filter((s) => s.amount > boosterCuts)
+            .reduce(
+              (t, s, index) => `${t}${index > 0 ? ", " : ""}${s.server}`,
+              ""
+            )}`,
+          inline: true,
+        },
         { name: "Run Time", value: `${availability}`, inline: true }
       )
       .setTimestamp()
@@ -66,12 +103,13 @@ export default {
     await Run.create({
       type: "M+",
       gold: gold,
+      server,
       participants: [],
       messageId: message.id,
       settings: {
         key,
         level,
-        cuts,
+        cuts: boosterCuts,
         availability,
       },
       createdBy: {

@@ -24,8 +24,6 @@ client.buttons = new Collection();
 // Log in to Discord with your client's token
 client.login(config.token);
 export default client;
-export const curatorRole = "curator",
-  adminPermission = "BanMembers";
 
 const registerAll = async () => {
   /// COMMANDS SECTION

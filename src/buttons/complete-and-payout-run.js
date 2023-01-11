@@ -2,14 +2,14 @@ import Run from "../models/run.js";
 import Transaction from "../models/transaction.js";
 import User from "../models/user.js";
 import { security, cuts } from "../utils/constants.js";
-import {
-  hasPermission,
-  sendBalanceUpdate,
-  modifyBank,
-} from "../utils/methods.js";
+import { hasPermission } from "../utils/methods.js";
 
 export default {
-  data: { name: "complete-run", permission: "admin", role: "curator" },
+  data: {
+    name: "complete-and-payout-run",
+    permission: "admin",
+    role: "curator",
+  },
   async execute(interaction) {
     const message = await interaction.message;
     const content = message.content.split("/");
@@ -30,7 +30,6 @@ export default {
     for (let i = 0; i < users.length; i++) {
       let dbUser = dbUsers.find((u) => u.id === users[i]);
       let user = runDB.participants.find((p) => p.id === dbUser.id);
-      dbUser.balance = dbUser.balance + user.cut;
       let transaction = {
         user: dbUser.id,
         amount: user.cut,
@@ -49,19 +48,67 @@ export default {
         },
       };
       await Transaction.create(transaction);
-      await dbUser.save();
-      sendBalanceUpdate(dbUser, runDB, user.cut);
+      transaction = {
+        user: dbUser.id,
+        amount: user.cut * -1,
+        server: runDB.server,
+        run: runDB._id,
+        settings: {
+          description: "Completed Run Payout",
+        },
+        createdBy: {
+          username: interaction.user.username,
+          id: interaction.user.id,
+        },
+        updatedBy: {
+          username: interaction.user.username,
+          id: interaction.user.id,
+        },
+      };
+      await Transaction.create(transaction);
     }
     const curator = await User.findOne({ id: runDB.createdBy.id });
     let curatorCut = runDB.gold * cuts[runDB.type].curator;
-    curator.balance = curator.balance + curatorCut;
-    await curator.save();
-    sendBalanceUpdate(curator, runDB, curatorCut);
-    await modifyBank(runDB.server, runDB.gold);
+    let transaction = {
+      user: curator.id,
+      amount: curatorCut,
+      server: runDB.server,
+      run: runDB._id,
+      settings: {
+        description: "Completed Run Balance Update",
+      },
+      createdBy: {
+        username: interaction.user.username,
+        id: interaction.user.id,
+      },
+      updatedBy: {
+        username: interaction.user.username,
+        id: interaction.user.id,
+      },
+    };
+    await Transaction.create(transaction);
+    transaction = {
+      user: curator.id,
+      amount: curatorCut * -1,
+      server: runDB.server,
+      run: runDB._id,
+      settings: {
+        description: "Completed Run Payout",
+      },
+      createdBy: {
+        username: interaction.user.username,
+        id: interaction.user.id,
+      },
+      updatedBy: {
+        username: interaction.user.username,
+        id: interaction.user.id,
+      },
+    };
+    await Transaction.create(transaction);
     runDB.status = "Done";
     await runDB.save();
     message.edit({
-      content: `This run has been marked as approved by ${interaction.user.tag}. ${run.url}`,
+      content: `This run has been marked as approved and paid out by ${interaction.user.tag}. ${run.url}`,
       components: [],
     });
   },

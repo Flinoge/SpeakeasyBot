@@ -39,7 +39,8 @@ if (config.env !== "production") {
 }
 export async function loadTestData(fileLocation) {
   if (config.env !== "production") {
-    const TestData = require(path.resolve(fileLocation));
+    let TestData = await import(path.resolve(fileLocation));
+    TestData = TestData.default;
     mongoose.connection.useDb(config.mongo.db);
     await Promise.all(
       Object.keys(TestData).map(async (collection) => {
