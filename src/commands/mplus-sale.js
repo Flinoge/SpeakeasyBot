@@ -24,6 +24,12 @@ export default {
     )
     .addStringOption((option) =>
       option
+        .setName("buyer")
+        .setDescription("The buyer (For logging only).")
+        .setRequired(true)
+    )
+    .addStringOption((option) =>
+      option
         .setName("availability")
         .setDescription("The time when the run will be taking place.")
         .setRequired(true)
@@ -49,9 +55,11 @@ export default {
     }
   },
   async execute(interaction) {
-    const gold = interaction.options.getNumber("gold");
+    let gold = interaction.options.getNumber("gold");
+    gold = gold / 1000.0;
     const boosterCuts = gold * cuts["M+"].booster;
     const server = interaction.options.getString("server");
+    const buyer = interaction.options.getString("buyer");
     const availability = interaction.options.getString("availability");
     const level = interaction.options.getNumber("level");
     const key = interaction.options.getString("key") || false;
@@ -97,7 +105,11 @@ export default {
         text: "React with roles and if you have key.",
         iconURL: interaction.member.user.avatarURL(),
       });
+    const mPlusRole = await interaction.guild.roles.cache.find(
+      (role) => role.name === "M+ sales"
+    );
     let message = await interaction.channel.send({
+      content: `<@&${mPlusRole.id}>`,
       embeds: [messageEmbed],
     });
     await Run.create({
@@ -111,6 +123,7 @@ export default {
         level,
         cuts: boosterCuts,
         availability,
+        buyer,
       },
       createdBy: {
         username: interaction.user.username,

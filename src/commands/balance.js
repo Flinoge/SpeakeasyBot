@@ -1,14 +1,18 @@
 import { SlashCommandBuilder, EmbedBuilder } from "discord.js";
 import User from "../models/user.js";
 import client from "../discord.js";
+import { checkMember } from "../utils/methods.js";
 
 export default {
-  permission: "admin",
   data: new SlashCommandBuilder()
     .setName("balance")
     .setDescription("Displays your balance."),
   async execute(interaction) {
-    const user = await User.findOne({ id: interaction.user.id });
+    let user = await User.findOne({ id: interaction.user.id });
+    // Check if user is in system.
+    if (!user) {
+      user = await checkMember(interaction.user);
+    }
     const messageEmbed = new EmbedBuilder()
       .setColor(0x0099ff)
       .setTitle("Active Balance")

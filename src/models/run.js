@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-const types = ["M+"];
+const types = ["M+", "Raid"];
 
 const stati = ["Pending", "Started", "Awaiting Approval", "Done"];
 

@@ -15,19 +15,19 @@ import Transaction from "../models/transaction.js";
 export default {
   permission: "admin",
   data: new SlashCommandBuilder()
-    .setName("add-balance")
-    .setDescription("Add balance to a user. (NOT USED FOR PAYMENT)")
+    .setName("deduct-balance")
+    .setDescription("Deduct Balance from User (NOT USED FOR PAYMENT).")
     .addStringOption((option) =>
       option
         .setName("user")
-        .setDescription("User to add Balance to")
+        .setDescription("User to Deduct")
         .setAutocomplete(true)
         .setRequired(true)
     )
     .addNumberOption((option) =>
       option
         .setName("gold")
-        .setDescription("The amount of gold to be added.")
+        .setDescription("The amount of gold payed out.")
         .setRequired(true)
     )
     .setDefaultMemberPermissions(
@@ -38,7 +38,6 @@ export default {
     const focusedValue = focusedOption.value;
     if (focusedOption.name === "user") {
       const users = await User.find({
-        balance: { $gt: 0 },
         "settings.username": { $regex: `.*${focusedValue}.*` },
       })
         .limit(10)
@@ -66,7 +65,7 @@ export default {
       user: dbUser.id,
       amount: gold * -1,
       settings: {
-        description: "Add-Balance Command",
+        description: "Deduct-Balance Command",
       },
       createdBy: {
         username: interaction.user.username,
@@ -82,7 +81,7 @@ export default {
     sendPaymentUpdate(dbUser, gold);
     sendCommandConfirmation(
       interaction.user,
-      `Payment to ${dbUser.settings.username} for ${gold}k`
+      `Deducted ${dbUser.settings.username} for ${gold}k`
     );
   },
 };

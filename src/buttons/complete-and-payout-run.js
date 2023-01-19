@@ -12,6 +12,11 @@ export default {
   },
   async execute(interaction) {
     const message = await interaction.message;
+    // Mark as Running
+    await message.edit({
+      content: `This run is being approved and paid out by ${interaction.user.tag}. ${run.url}`,
+      components: [],
+    });
     const content = message.content.split("/");
     let run = await interaction.guild.channels.fetch(content[5]);
     run = await run.messages.fetch(content[6]);
@@ -27,10 +32,11 @@ export default {
     }
     const users = runDB.participants.map((p) => p.id);
     const dbUsers = await User.find({ id: { $in: users } });
+    let transactions = [];
     for (let i = 0; i < users.length; i++) {
       let dbUser = dbUsers.find((u) => u.id === users[i]);
       let user = runDB.participants.find((p) => p.id === dbUser.id);
-      let transaction = {
+      const transaction1 = {
         user: dbUser.id,
         amount: user.cut,
         server: runDB.server,
@@ -47,8 +53,8 @@ export default {
           id: interaction.user.id,
         },
       };
-      await Transaction.create(transaction);
-      transaction = {
+      transactions.push(transaction1);
+      const transaction2 = {
         user: dbUser.id,
         amount: user.cut * -1,
         server: runDB.server,
@@ -65,11 +71,11 @@ export default {
           id: interaction.user.id,
         },
       };
-      await Transaction.create(transaction);
+      transactions.push(transaction2);
     }
     const curator = await User.findOne({ id: runDB.createdBy.id });
     let curatorCut = runDB.gold * cuts[runDB.type].curator;
-    let transaction = {
+    let transaction1 = {
       user: curator.id,
       amount: curatorCut,
       server: runDB.server,
@@ -86,8 +92,23 @@ export default {
         id: interaction.user.id,
       },
     };
-    await Transaction.create(transaction);
-    transaction = {
+    transactions.push(transaction1);
+    // Make sure it doesnt get ran 2 times
+    const doubleCheck = await Run.findOne({
+      messageId: run.id,
+    });
+    if (doubleCheck.status === "Done") {
+      await message.edit({
+        content: `This run is being approved by ${interaction.user.tag}. ${run.url}`,
+        components: [],
+      });
+      sendCommandError(
+        interaction.user,
+        "Complete run command has attempted to ran twice."
+      );
+      return;
+    }
+    const transaction2 = {
       user: curator.id,
       amount: curatorCut * -1,
       server: runDB.server,
@@ -104,9 +125,13 @@ export default {
         id: interaction.user.id,
       },
     };
-    await Transaction.create(transaction);
+    transactions.push(transaction2);
     runDB.status = "Done";
     await runDB.save();
+    // Once all is ran, save 1 time.
+    for (let i = 0; i < transactions.length; i++) {
+      await Transaction.create(transactions[i]);
+    }
     message.edit({
       content: `This run has been marked as approved and paid out by ${interaction.user.tag}. ${run.url}`,
       components: [],

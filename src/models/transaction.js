@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 const Schema = new mongoose.Schema({
   user: { type: String },
   amount: { type: Number, required: true },
-  server: { type: String, required: true },
+  server: { type: String },
   run: { type: String },
   settings: { type: Object, required: true },
   createdAt: { type: Date, required: true, default: Date.now() },

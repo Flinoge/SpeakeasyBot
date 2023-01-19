@@ -79,8 +79,14 @@ export default {
       return;
     }
     const dbUser = await User.find({ id: user });
+    if (!dbUser) {
+      sendCommandError(
+        interaction.user,
+        "User specified does not exist in system."
+      );
+      return;
+    }
     dbUser.balance = dbUser.balance - gold;
-    dbUser.save();
     let transaction = {
       user: dbUser.id,
       amount: gold * -1,
@@ -99,6 +105,7 @@ export default {
     };
     await Transaction.create(transaction);
     await modifyBank(server, gold * -1);
+    dbUser.save();
     sendPaymentUpdate(dbUser, gold);
     sendCommandConfirmation(
       interaction.user,

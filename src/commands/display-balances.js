@@ -16,31 +16,37 @@ export default {
       PermissionFlagsBits[security.permissions.admin]
     ),
   async execute(interaction) {
-    const activeUsers = await User.find({ balance: { $gt: 0 } }).limit(25);
-    const messageEmbed = new EmbedBuilder()
-      .setColor(0x0099ff)
-      .setTitle("Active Balances")
-      .setAuthor({
-        name: client.user.username,
-        iconURL: client.user.avatarURL(),
-      })
-      .setThumbnail(client.user.avatarURL())
-      .setTimestamp()
-      .setFooter({
-        text: `${
-          activeUsers.length > 0
-            ? `Someone is slacking Madge.`
-            : `All caught up, good job!`
-        }`,
-        iconURL: client.user.avatarURL(),
+    let totalUsers = await User.find({ balance: { $gt: 0 } });
+    totalUsers = totalUsers.count();
+    for (let i = 0; i < totalUsers / 25; i++) {
+      const activeUsers = await User.find({ balance: { $gt: 0 } })
+        .limit(25)
+        .skip(i);
+      const messageEmbed = new EmbedBuilder()
+        .setColor(0x0099ff)
+        .setTitle("Active Balances")
+        .setAuthor({
+          name: client.user.username,
+          iconURL: client.user.avatarURL(),
+        })
+        .setThumbnail(client.user.avatarURL())
+        .setTimestamp()
+        .setFooter({
+          text: `${
+            activeUsers.length > 0
+              ? `Someone is slacking Madge.`
+              : `All caught up, good job!`
+          }`,
+          iconURL: client.user.avatarURL(),
+        });
+      messageEmbed.data.fields = activeUsers.map((u) => ({
+        name: u.settings.username,
+        value: `${u.balance}k`,
+        inline: true,
+      }));
+      await interaction.channel.send({
+        embeds: [messageEmbed],
       });
-    messageEmbed.data.fields = activeUsers.map((u) => ({
-      name: u.settings.username,
-      value: `${u.balance}k`,
-      inline: true,
-    }));
-    await interaction.channel.send({
-      embeds: [messageEmbed],
-    });
+    }
   },
 };

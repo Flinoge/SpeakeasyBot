@@ -6,12 +6,18 @@ import {
   hasPermission,
   sendBalanceUpdate,
   modifyBank,
+  sendCommandError,
 } from "../utils/methods.js";
 
 export default {
   data: { name: "complete-run", permission: "admin", role: "curator" },
   async execute(interaction) {
     const message = await interaction.message;
+    // Mark as Running
+    await message.edit({
+      content: `This run is being approved by ${interaction.user.tag}. ${run.url}`,
+      components: [],
+    });
     const content = message.content.split("/");
     let run = await interaction.guild.channels.fetch(content[5]);
     run = await run.messages.fetch(content[6]);
@@ -27,6 +33,8 @@ export default {
     }
     const users = runDB.participants.map((p) => p.id);
     const dbUsers = await User.find({ id: { $in: users } });
+    let transactions = [];
+    let saveUsers = [];
     for (let i = 0; i < users.length; i++) {
       let dbUser = dbUsers.find((u) => u.id === users[i]);
       let user = runDB.participants.find((p) => p.id === dbUser.id);
@@ -48,18 +56,41 @@ export default {
           id: interaction.user.id,
         },
       };
-      await Transaction.create(transaction);
-      await dbUser.save();
-      sendBalanceUpdate(dbUser, runDB, user.cut);
+      saveUsers.push(dbUser);
+      transactions.push(transaction);
+    }
+    // Make sure it doesnt get ran 2 times
+    const doubleCheck = await Run.findOne({
+      messageId: run.id,
+    });
+    if (doubleCheck.status === "Done") {
+      await message.edit({
+        content: `This run is being approved by ${interaction.user.tag}. ${run.url}`,
+        components: [],
+      });
+      sendCommandError(
+        interaction.user,
+        "Complete run command has attempted to ran twice."
+      );
+      return;
+    }
+    await modifyBank(runDB.server, runDB.gold);
+    runDB.status = "Done";
+    await runDB.save();
+    // Once all is ran, save 1 time.
+    for (let i = 0; i < transactions.length; i++) {
+      await Transaction.create(transactions[i]);
+    }
+    for (let i = 0; i < saveUsers.length; i++) {
+      await saveUsers[i].save();
+      let user = runDB.participants.find((p) => p.id === saveUsers[i].id);
+      sendBalanceUpdate(saveUsers[i], runDB, user.cut);
     }
     const curator = await User.findOne({ id: runDB.createdBy.id });
     let curatorCut = runDB.gold * cuts[runDB.type].curator;
     curator.balance = curator.balance + curatorCut;
     await curator.save();
     sendBalanceUpdate(curator, runDB, curatorCut);
-    await modifyBank(runDB.server, runDB.gold);
-    runDB.status = "Done";
-    await runDB.save();
     message.edit({
       content: `This run has been marked as approved by ${interaction.user.tag}. ${run.url}`,
       components: [],

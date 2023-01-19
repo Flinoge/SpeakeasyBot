@@ -2,6 +2,7 @@ import { EmbedBuilder, PermissionsBitField } from "discord.js";
 import client from "../discord.js";
 import { security } from "./constants.js";
 import Bank from "../models/bank.js";
+import User from "../models/user.js";
 
 export function mentionToId(mention) {
   return mention.replace("<", "").replace(">", "").replace("@", "");
@@ -58,7 +59,7 @@ export async function sendBalanceUpdate(user, runDB, cut) {
 export async function sendPaymentUpdate(user, gold) {
   const messageEmbed = new EmbedBuilder()
     .setColor(0x0099ff)
-    .setTitle("Payment Notification")
+    .setTitle("Balance Notification")
     .setDescription(`Your new balance is: ${user.balance}k.`)
     .setAuthor({
       name: client.user.username,
@@ -122,4 +123,27 @@ export async function modifyBank(server, gold) {
   let bank = await Bank.find({ server });
   bank.amount = bank.amount + gold;
   bank.save();
+}
+
+export async function checkMember(user) {
+  const userDB = await User.findOne({ id: user.id });
+  if (!userDB) {
+    const newUser = await User.create({
+      id: user.id,
+      balance: 0,
+      settings: {
+        username: user.username,
+        avatarURL: user.avatarURL(),
+      },
+      createdBy: {
+        username: user.username,
+        id: user.id,
+      },
+      updatedBy: {
+        username: user.username,
+        id: user.id,
+      },
+    });
+    return newUser;
+  }
 }

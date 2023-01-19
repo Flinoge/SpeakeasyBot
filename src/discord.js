@@ -20,6 +20,7 @@ const client = new Client({
   partials: [Partials.Message, Partials.Channel, Partials.Reaction],
 });
 client.commands = new Collection();
+client.modals = new Collection();
 client.buttons = new Collection();
 // Log in to Discord with your client's token
 client.login(config.token);
@@ -90,6 +91,15 @@ const registerAll = async () => {
   for (const file of buttonFiles) {
     const button = (await import(`./buttons/${file}`)).default;
     client.buttons.set(button.data.name, button);
+  }
+
+  /// Modals Section
+  const modalFiles = fs
+    .readdirSync("./src/modals")
+    .filter((file) => file.endsWith(".js"));
+  for (const file of modalFiles) {
+    const modal = (await import(`./modals/${file}`)).default;
+    client.buttons.set(modal.data.name, modal);
   }
 };
 

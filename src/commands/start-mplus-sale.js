@@ -8,7 +8,11 @@ import {
 import Run from "../models/run.js";
 import User from "../models/user.js";
 import moment from "moment";
-import { mentionToId } from "../utils/methods.js";
+import {
+  mentionToId,
+  checkMember,
+  sendCommandError,
+} from "../utils/methods.js";
 import config from "../config.js";
 import Client from "../discord.js";
 
@@ -79,31 +83,30 @@ export default {
         interaction.options.getString("run")
       );
       if (run) {
-        const otherRoles = [];
         let role = JSON.parse(JSON.stringify(focusedOption.name));
         if (role === "dps1" || role === "dps2") role = "dps";
         const reaction = await run.reactions.cache.find(
           (r) => r.emoji.name === role
         );
         let reactedUsers = await reaction.users.fetch();
-        // TODO Uncomment once testing for more than 1 user
-        // const otherRoles = [
-        //   interaction.options.getString("tank"),
-        //   interaction.options.getString("healer"),
-        //   interaction.options.getString("dps1"),
-        //   interaction.options.getString("dps2"),
-        // ];
-        // if (role.name === "havekey") {
-        //   reactedUsers = reactedUsers.filter(
-        //     (user) => otherRoles.indexOf(user.id) !== -1
-        //   );
-        // }
+        const otherRoles = [
+          interaction.options.getString("tank"),
+          interaction.options.getString("healer"),
+          interaction.options.getString("dps1"),
+          interaction.options.getString("dps2"),
+        ];
+        if (role.name === "havekey") {
+          reactedUsers = reactedUsers.filter(
+            (user) => otherRoles.indexOf(user.id) !== -1
+          );
+        }
         const users = await Promise.all(
           reactedUsers
             .filter(
               (u) =>
                 !u.bot &&
-                (otherRoles.indexOf(u.tag) === -1 || role.name === "havekey")
+                (otherRoles.indexOf(u.toString()) === -1 ||
+                  role.name === "havekey")
             )
             .map(async (user) => {
               let member = await interaction.guild.members.fetch(user.id);
@@ -128,6 +131,13 @@ export default {
     const runDB = await Run.findOne({
       messageId: interaction.options.getString("run"),
     });
+    if (!runDB) {
+      sendCommandError(
+        interaction.user,
+        "Run specified does not exist in system."
+      );
+      return;
+    }
     if (run && runDB) {
       await run.reactions.removeAll();
       const tank = interaction.options.getString("tank");
@@ -136,6 +146,25 @@ export default {
       const dps2 = interaction.options.getString("dps2");
       const keyholder = interaction.options.getString("havekey");
       const possibleReactors = [tank, healer, dps1, dps2];
+      const keyParticipants = [
+        mentionToId(tank),
+        mentionToId(healer),
+        mentionToId(dps1),
+        mentionToId(dps2),
+        mentionToId(keyholder),
+      ];
+      for (let i = 0; i < keyParticipants.length; i++) {
+        const participant = await User.findOne({
+          id: keyParticipants[i],
+        });
+        if (!participant) {
+          sendCommandError(
+            interaction.user,
+            "One or more selected users do not exist in system."
+          );
+          return;
+        }
+      }
       let messageEmbed = new EmbedBuilder()
         .setColor(0x0099ff)
         .setTitle("M+ Sale")
@@ -165,10 +194,10 @@ export default {
           iconURL: interaction.member.user.avatarURL(),
         });
       await run.edit({
+        content: `${tank}, ${healer}, ${dps1}, ${dps2}`,
         embeds: [messageEmbed],
       });
       try {
-        runDB.status = "Started";
         runDB.participants = [
           {
             id: mentionToId(tank),
@@ -187,6 +216,7 @@ export default {
             cut: runDB.settings.cuts,
           },
         ];
+        runDB.status = "Started";
         await runDB.save();
         await run.react("✅");
         const filter = (reaction, user) => {
@@ -199,7 +229,6 @@ export default {
           .awaitReactions({ filter, max: 1, time: 5400000, errors: ["time"] })
           .then(async (collected) => {
             const reaction = collected.first();
-            console.log(reaction);
 
             if (reaction.emoji.name === "✅") {
               messageEmbed = new EmbedBuilder()
@@ -234,6 +263,7 @@ export default {
                   iconURL: interaction.member.user.avatarURL(),
                 });
               await run.edit({
+                content: ``,
                 embeds: [messageEmbed],
               });
               runDB.status = "Awaiting Approval";
@@ -252,7 +282,9 @@ export default {
                   .setStyle(ButtonStyle.Primary)
               );
               channel.send({
-                content: `There is a run waiting approval. ${run.url}`,
+                content: `${interaction.user.toString()} There is a run waiting approval. ${
+                  run.url
+                }`,
                 components: [row, row2],
               });
             }
@@ -272,7 +304,9 @@ export default {
                 .setStyle(ButtonStyle.Primary)
             );
             channel.send({
-              content: `There is a run that has been going for 1.5 Hours and isn't completed. ${run.url}`,
+              content: `${interaction.user.toString()} There is a run that has been going for 1.5 Hours and isn't completed. ${
+                run.url
+              }`,
               components: [row, row2],
             });
           });
@@ -280,34 +314,6 @@ export default {
         console.log(e);
         console.log("Error Reacting on message.");
       }
-    } else {
-      await interaction.reply({
-        content:
-          "The run you chose does not exist or the message has been deleted.",
-        ephemeral: true,
-      });
     }
   },
-};
-
-const checkMember = async (user) => {
-  const userDB = await User.findOne({ id: user.id });
-  if (!userDB) {
-    await User.create({
-      id: user.id,
-      balance: 0,
-      settings: {
-        username: user.username,
-        avatarURL: user.avatarURL(),
-      },
-      createdBy: {
-        username: user.username,
-        id: user.id,
-      },
-      updatedBy: {
-        username: user.username,
-        id: user.id,
-      },
-    });
-  }
 };

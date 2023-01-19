@@ -7,6 +7,7 @@ export default {
   async execute(interaction) {
     let individualAccess = true;
     if (interaction.isChatInputCommand()) {
+      // Is a input command
       const command = interaction.client.commands.get(interaction.commandName);
 
       if (!command) {
@@ -43,6 +44,7 @@ export default {
         console.error(error);
       }
     } else if (interaction.isAutocomplete()) {
+      // Is a autocomplete
       const command = interaction.client.commands.get(interaction.commandName);
 
       if (!command) {
@@ -76,6 +78,7 @@ export default {
         console.error(error);
       }
     } else if (interaction.isButton()) {
+      // Is a button press
       const button = interaction.client.buttons.get(interaction.customId);
 
       if (!button) {
@@ -102,6 +105,37 @@ export default {
           return;
         }
         await button.execute(interaction);
+      } catch (error) {
+        console.error(error);
+      }
+    } else if (interaction.isModalSubmit()) {
+      // Is a modal submit
+      const modal = interaction.client.buttons.get(interaction.customId);
+
+      if (!modal) {
+        console.error(`No command matching ${interaction.customId} was found.`);
+        return;
+      }
+
+      try {
+        await interaction.deferReply();
+        await interaction.deleteReply();
+        if (modal.permission) {
+          if (
+            !hasPermission(interaction, security.permissions[modal.permission])
+          ) {
+            individualAccess = false;
+          }
+        }
+        if (modal.role) {
+          if (!hasRole(interaction, security.roles[modal.role])) {
+            individualAccess = false;
+          }
+        }
+        if (!individualAccess) {
+          return;
+        }
+        await modal.execute(interaction);
       } catch (error) {
         console.error(error);
       }
