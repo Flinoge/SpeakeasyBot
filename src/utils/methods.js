@@ -120,7 +120,7 @@ export async function availableServers() {
 }
 
 export async function modifyBank(server, gold) {
-  let bank = await Bank.find({ server });
+  let bank = await Bank.findOne({ server });
   bank.amount = bank.amount + gold;
   bank.save();
 }

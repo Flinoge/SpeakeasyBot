@@ -2,8 +2,8 @@ import mongoose from "mongoose";
 
 const Schema = new mongoose.Schema({
   server: { type: String, required: true },
-  amount: { type: Number, required: true },
-  settings: { type: Object, required: true },
+  amount: { type: Number, required: true, default: 0 },
+  settings: { type: Object, required: true, default: {} },
   createdAt: { type: Date, required: true, default: Date.now() },
   createdBy: {
     username: { type: String, required: true },

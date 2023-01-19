@@ -10,6 +10,7 @@ import {
   sendCommandConfirmation,
 } from "../utils/methods.js";
 import Transaction from "../models/transaction.js";
+import Bank from "../models/bank.js"
 
 export default {
   permission: "admin",

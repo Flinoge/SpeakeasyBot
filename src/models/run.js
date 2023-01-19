@@ -7,7 +7,7 @@ const stati = ["Pending", "Started", "Awaiting Approval", "Done"];
 const Schema = new mongoose.Schema({
   type: { type: String, required: true, enum: types },
   server: { type: String, required: true },
-  gold: { type: Number, required: true },
+  gold: { type: Number, required: true, default: 0 },
   participants: [
     {
       id: { type: String, required: true },
@@ -16,7 +16,7 @@ const Schema = new mongoose.Schema({
   ],
   status: { type: String, required: true, enum: stati, default: "Pending" },
   messageId: { type: String, required: true },
-  settings: { type: Object, required: false },
+  settings: { type: Object, required: false, default: {} },
   createdAt: { type: Date, required: true, default: Date.now() },
   createdBy: {
     username: { type: String, required: true },

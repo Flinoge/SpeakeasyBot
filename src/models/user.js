@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 const Schema = new mongoose.Schema({
   id: { type: String, required: true },
-  balance: { type: Number, required: true },
+  balance: { type: Number, required: true, default: 0 },
   settings: {
     username: { type: String, required: true },
     avatarURL: { type: String, required: true },

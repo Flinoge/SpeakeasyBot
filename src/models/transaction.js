@@ -2,10 +2,10 @@ import mongoose from "mongoose";
 
 const Schema = new mongoose.Schema({
   user: { type: String },
-  amount: { type: Number, required: true },
+  amount: { type: Number, required: true, default: 0 },
   server: { type: String },
   run: { type: String },
-  settings: { type: Object, required: true },
+  settings: { type: Object, required: true, default: {} },
   createdAt: { type: Date, required: true, default: Date.now() },
   createdBy: {
     username: { type: String, required: true },
