@@ -17,7 +17,25 @@ export default {
     ),
   async execute(interaction) {
     let totalUsers = await User.find({ balance: { $gt: 0 } });
-    totalUsers = totalUsers.count();
+    totalUsers = totalUsers.length;
+    if(totalUsers === 0) {
+      const messageEmbed = new EmbedBuilder()
+        .setColor(0x0099ff)
+        .setTitle("No Active Balances :D")
+        .setAuthor({
+          name: client.user.username,
+          iconURL: client.user.avatarURL(),
+        })
+        .setThumbnail(client.user.avatarURL())
+        .setTimestamp()
+        .setFooter({
+          text: `All caught up, good job!`,
+          iconURL: client.user.avatarURL(),
+        });
+      await interaction.channel.send({
+        embeds: [messageEmbed],
+      });
+    }
     for (let i = 0; i < totalUsers / 25; i++) {
       const activeUsers = await User.find({ balance: { $gt: 0 } })
         .limit(25)

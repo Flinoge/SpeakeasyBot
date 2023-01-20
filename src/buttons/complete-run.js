@@ -13,16 +13,16 @@ export default {
   data: { name: "complete-run", permission: "admin", role: "curator" },
   async execute(interaction) {
     const message = await interaction.message;
-    // Mark as Running
-    await message.edit({
-      content: `This run is being approved by ${interaction.user.tag}. ${run.url}`,
-      components: [],
-    });
     const content = message.content.split("/");
     let run = await interaction.guild.channels.fetch(content[5]);
     run = await run.messages.fetch(content[6]);
     const runDB = await Run.findOne({
       messageId: run.id,
+    });
+    // Mark as Running
+    await message.edit({
+      content: `This run is being approved by ${interaction.user.tag}. ${run.url}`,
+      components: [],
     });
     if (!hasPermission(interaction, security.permissions.admin)) {
       // Check to see if they are a curator that owns the run

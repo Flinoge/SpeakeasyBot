@@ -78,7 +78,7 @@ export default {
       );
       return;
     }
-    const dbUser = await User.find({ id: user });
+    const dbUser = await User.findOne({ id: user });
     if (!dbUser) {
       sendCommandError(
         interaction.user,

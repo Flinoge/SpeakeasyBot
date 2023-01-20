@@ -85,6 +85,13 @@ export default {
       if (run) {
         let role = JSON.parse(JSON.stringify(focusedOption.name));
         if (role === "dps1" || role === "dps2") role = "dps";
+        if (!run) {
+          sendCommandError(
+            interaction.user,
+            "Message specified does not exist in system."
+          );
+          return;
+        }
         const reaction = await run.reactions.cache.find(
           (r) => r.emoji.name === role
         );
@@ -95,9 +102,9 @@ export default {
           interaction.options.getString("dps1"),
           interaction.options.getString("dps2"),
         ];
-        if (role.name === "havekey") {
+        if (role === "havekey") {
           reactedUsers = reactedUsers.filter(
-            (user) => otherRoles.indexOf(user.id) !== -1
+            (user) => otherRoles.indexOf(user.toString()) !== -1
           );
         }
         const users = await Promise.all(
@@ -106,7 +113,7 @@ export default {
               (u) =>
                 !u.bot &&
                 (otherRoles.indexOf(u.toString()) === -1 ||
-                  role.name === "havekey")
+                  role === "havekey")
             )
             .map(async (user) => {
               let member = await interaction.guild.members.fetch(user.id);
@@ -117,9 +124,9 @@ export default {
               };
             })
         );
-        const filtered = users.filter(
+        const filtered = focusedValue ? users.filter(
           (u) => u.name.indexOf(focusedValue) !== -1
-        );
+        ) : users;
         await interaction.respond(filtered);
       }
     }
@@ -139,7 +146,6 @@ export default {
       return;
     }
     if (run && runDB) {
-      await run.reactions.removeAll();
       const tank = interaction.options.getString("tank");
       const healer = interaction.options.getString("healer");
       const dps1 = interaction.options.getString("dps1");
@@ -148,11 +154,34 @@ export default {
       const possibleReactors = [tank, healer, dps1, dps2];
       const keyParticipants = [
         mentionToId(tank),
-        mentionToId(healer),
-        mentionToId(dps1),
-        mentionToId(dps2),
-        mentionToId(keyholder),
       ];
+      if (keyParticipants.indexOf(mentionToId(healer)) === -1) {
+        keyParticipants.push(mentionToId(healer))
+      } else {
+        sendCommandError(
+          interaction.user,
+          "One or more selected users are repeated in run."
+        );
+        return;
+      }
+      if (keyParticipants.indexOf(mentionToId(dps1)) === -1) {
+        keyParticipants.push(mentionToId(dps1))
+      } else {
+        sendCommandError(
+          interaction.user,
+          "One or more selected users are repeated in run."
+        );
+        return;
+      }
+      if (keyParticipants.indexOf(mentionToId(dps2)) === -1) {
+        keyParticipants.push(mentionToId(dps2))
+      } else {
+        sendCommandError(
+          interaction.user,
+          "One or more selected users are repeated in run."
+        );
+        return;
+      }
       for (let i = 0; i < keyParticipants.length; i++) {
         const participant = await User.findOne({
           id: keyParticipants[i],
@@ -218,6 +247,7 @@ export default {
         ];
         runDB.status = "Started";
         await runDB.save();
+        await run.reactions.removeAll();
         await run.react("✅");
         const filter = (reaction, user) => {
           return (

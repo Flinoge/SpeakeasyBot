@@ -12,16 +12,16 @@ export default {
   },
   async execute(interaction) {
     const message = await interaction.message;
-    // Mark as Running
-    await message.edit({
-      content: `This run is being approved and paid out by ${interaction.user.tag}. ${run.url}`,
-      components: [],
-    });
     const content = message.content.split("/");
     let run = await interaction.guild.channels.fetch(content[5]);
     run = await run.messages.fetch(content[6]);
     const runDB = await Run.findOne({
       messageId: run.id,
+    });
+    // Mark as Running
+    await message.edit({
+      content: `This run is being approved and paid out by ${interaction.user.tag}. ${run.url}`,
+      components: [],
     });
     if (!hasPermission(interaction, security.permissions.admin)) {
       // Check to see if they are a curator that owns the run
@@ -74,6 +74,9 @@ export default {
       transactions.push(transaction2);
     }
     const curator = await User.findOne({ id: runDB.createdBy.id });
+    if (!curator) {
+      curator = await checkMember(interaction.user)
+    }
     let curatorCut = runDB.gold * cuts[runDB.type].curator;
     let transaction1 = {
       user: curator.id,

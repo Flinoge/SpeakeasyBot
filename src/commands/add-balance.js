@@ -53,7 +53,7 @@ export default {
   async execute(interaction) {
     const user = interaction.options.getString("user");
     const gold = interaction.options.getNumber("gold");
-    const dbUser = await User.find({ id: user });
+    const dbUser = await User.findOne({ id: user });
     if (!dbUser) {
       sendCommandError(
         interaction.user,
