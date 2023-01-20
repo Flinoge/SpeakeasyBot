@@ -121,8 +121,16 @@ export async function availableServers() {
 
 export async function modifyBank(server, gold) {
   let bank = await Bank.findOne({ server });
+  if (!bank) {
+    sendCommandError(
+      interaction.user,
+      "Bank specified does not exist in system."
+    );
+    return false;
+  }
   bank.amount = bank.amount + gold;
   bank.save();
+  return true;
 }
 
 export async function checkMember(user) {

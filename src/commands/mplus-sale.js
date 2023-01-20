@@ -108,6 +108,32 @@ export default {
     const mPlusRole = await interaction.guild.roles.cache.find(
       (role) => role.name === "M+ sales"
     );
+    if (!mPlusRole) {
+      sendCommandError(
+        interaction.user,
+        "\"M+ sales\" role does not exist on the server."
+      );
+      return;
+    }
+    const dps = message.guild.emojis.cache.find(
+      (emoji) => emoji.name === "dps"
+    );
+    const healer = message.guild.emojis.cache.find(
+      (emoji) => emoji.name === "healer"
+    );
+    const tank = message.guild.emojis.cache.find(
+      (emoji) => emoji.name === "tank"
+    );
+    const havekey = message.guild.emojis.cache.find(
+      (emoji) => emoji.name === "havekey"
+    );
+    if (!dps || !healer || !tank || !havekey) {
+      sendCommandError(
+        interaction.user,
+        "One or more emojis do not exist specified does not exist in system."
+      );
+      return;
+    }
     let message = await interaction.channel.send({
       content: `<@&${mPlusRole.id}>`,
       embeds: [messageEmbed],
@@ -134,18 +160,13 @@ export default {
         id: interaction.user.id,
       },
     });
-    const dps = message.guild.emojis.cache.find(
-      (emoji) => emoji.name === "dps"
-    );
-    const healer = message.guild.emojis.cache.find(
-      (emoji) => emoji.name === "healer"
-    );
-    const tank = message.guild.emojis.cache.find(
-      (emoji) => emoji.name === "tank"
-    );
-    const havekey = message.guild.emojis.cache.find(
-      (emoji) => emoji.name === "havekey"
-    );
+    if (!dps || !healer || !tank || !havekey) {
+      sendCommandError(
+        interaction.user,
+        "One or more emojis do not exist specified does not exist in system."
+      );
+      return;
+    }
     try {
       await message.react(tank);
       await message.react(healer);

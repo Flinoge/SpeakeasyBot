@@ -7,6 +7,7 @@ import {
   sendBalanceUpdate,
   modifyBank,
   sendCommandError,
+  checkMember,
 } from "../utils/methods.js";
 
 export default {
@@ -19,6 +20,13 @@ export default {
     const runDB = await Run.findOne({
       messageId: run.id,
     });
+    if (!runDB) {
+      sendCommandError(
+        interaction.user,
+        "Run specified does not exist in system."
+      );
+      return;
+    }
     // Mark as Running
     await message.edit({
       content: `This run is being approved by ${interaction.user.tag}. ${run.url}`,
@@ -64,17 +72,16 @@ export default {
       messageId: run.id,
     });
     if (doubleCheck.status === "Done") {
-      await message.edit({
-        content: `This run is being approved by ${interaction.user.tag}. ${run.url}`,
-        components: [],
-      });
       sendCommandError(
         interaction.user,
         "Complete run command has attempted to ran twice."
       );
       return;
     }
-    await modifyBank(runDB.server, runDB.gold);
+    let bankModified = await modifyBank(runDB.server, runDB.gold);
+    if (!bankModified) {
+      return;
+    }
     runDB.status = "Done";
     await runDB.save();
     // Once all is ran, save 1 time.
@@ -86,7 +93,10 @@ export default {
       let user = runDB.participants.find((p) => p.id === saveUsers[i].id);
       sendBalanceUpdate(saveUsers[i], runDB, user.cut);
     }
-    const curator = await User.findOne({ id: runDB.createdBy.id });
+    let curator = await User.findOne({ id: runDB.createdBy.id });
+    if (!curator) {
+      curator = await checkMember(interaction.user)
+    }
     let curatorCut = runDB.gold * cuts[runDB.type].curator;
     curator.balance = curator.balance + curatorCut;
     await curator.save();

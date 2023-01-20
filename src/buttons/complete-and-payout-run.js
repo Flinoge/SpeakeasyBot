@@ -18,6 +18,13 @@ export default {
     const runDB = await Run.findOne({
       messageId: run.id,
     });
+    if (!runDB) {
+      sendCommandError(
+        interaction.user,
+        "Run specified does not exist in system."
+      );
+      return;
+    }
     // Mark as Running
     await message.edit({
       content: `This run is being approved and paid out by ${interaction.user.tag}. ${run.url}`,
@@ -101,10 +108,6 @@ export default {
       messageId: run.id,
     });
     if (doubleCheck.status === "Done") {
-      await message.edit({
-        content: `This run is being approved by ${interaction.user.tag}. ${run.url}`,
-        components: [],
-      });
       sendCommandError(
         interaction.user,
         "Complete run command has attempted to ran twice."

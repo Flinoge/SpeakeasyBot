@@ -180,6 +180,13 @@ export default {
     const raiderRole = await interaction.guild.roles.cache.find(
       (role) => role.name === "Raider"
     );
+    if (!raiderRole) {
+      sendCommandError(
+        interaction.user,
+        "\"Raider\" role does not exist on the server."
+      );
+      return;
+    }
     let message = await interaction.channel.send({
       content: `<@&${raiderRole.id}>`,
       embeds: [messageEmbed],

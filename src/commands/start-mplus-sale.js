@@ -95,6 +95,13 @@ export default {
         const reaction = await run.reactions.cache.find(
           (r) => r.emoji.name === role
         );
+        if (!reaction) {
+          sendCommandError(
+            interaction.user,
+            "Emoji specified does not exist on server."
+          );
+          return;
+        }
         let reactedUsers = await reaction.users.fetch();
         const otherRoles = [
           interaction.options.getString("tank"),
@@ -112,8 +119,7 @@ export default {
             .filter(
               (u) =>
                 !u.bot &&
-                (otherRoles.indexOf(u.toString()) === -1 ||
-                  role === "havekey")
+                (otherRoles.indexOf(u.toString()) === -1 || role === "havekey")
             )
             .map(async (user) => {
               let member = await interaction.guild.members.fetch(user.id);
@@ -124,9 +130,9 @@ export default {
               };
             })
         );
-        const filtered = focusedValue ? users.filter(
-          (u) => u.name.indexOf(focusedValue) !== -1
-        ) : users;
+        const filtered = focusedValue
+          ? users.filter((u) => u.name.indexOf(focusedValue) !== -1)
+          : users;
         await interaction.respond(filtered);
       }
     }
@@ -152,11 +158,9 @@ export default {
       const dps2 = interaction.options.getString("dps2");
       const keyholder = interaction.options.getString("havekey");
       const possibleReactors = [tank, healer, dps1, dps2];
-      const keyParticipants = [
-        mentionToId(tank),
-      ];
+      const keyParticipants = [mentionToId(tank)];
       if (keyParticipants.indexOf(mentionToId(healer)) === -1) {
-        keyParticipants.push(mentionToId(healer))
+        keyParticipants.push(mentionToId(healer));
       } else {
         sendCommandError(
           interaction.user,
@@ -165,7 +169,7 @@ export default {
         return;
       }
       if (keyParticipants.indexOf(mentionToId(dps1)) === -1) {
-        keyParticipants.push(mentionToId(dps1))
+        keyParticipants.push(mentionToId(dps1));
       } else {
         sendCommandError(
           interaction.user,
@@ -174,7 +178,7 @@ export default {
         return;
       }
       if (keyParticipants.indexOf(mentionToId(dps2)) === -1) {
-        keyParticipants.push(mentionToId(dps2))
+        keyParticipants.push(mentionToId(dps2));
       } else {
         sendCommandError(
           interaction.user,
@@ -297,8 +301,15 @@ export default {
                 embeds: [messageEmbed],
               });
               runDB.status = "Awaiting Approval";
-              await runDB.save();
               const channel = Client.channels.cache.get(config.admin_channel);
+              if (!channel) {
+                sendCommandError(
+                  interaction.user,
+                  "Channel specified does not exist in discord."
+                );
+                return;
+              }
+              await runDB.save();
               const row = new ActionRowBuilder().addComponents(
                 new ButtonBuilder()
                   .setCustomId("complete-run")
@@ -321,6 +332,13 @@ export default {
           })
           .catch((collected) => {
             const channel = Client.channels.cache.get(config.admin_channel);
+            if (!channel) {
+              sendCommandError(
+                interaction.user,
+                "Channel specified does not exist in discord."
+              );
+              return;
+            }
             const row = new ActionRowBuilder().addComponents(
               new ButtonBuilder()
                 .setCustomId("complete-run")

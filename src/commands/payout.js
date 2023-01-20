@@ -104,7 +104,10 @@ export default {
       },
     };
     await Transaction.create(transaction);
-    await modifyBank(server, gold * -1);
+    let bankModified = await modifyBank(server, gold * -1);
+    if (!bankModified) {
+      return;
+    }
     dbUser.save();
     sendPaymentUpdate(dbUser, gold);
     sendCommandConfirmation(
