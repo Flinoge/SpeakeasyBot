@@ -93,14 +93,16 @@ export default {
       let user = runDB.participants.find((p) => p.id === saveUsers[i].id);
       sendBalanceUpdate(saveUsers[i], runDB, user.cut);
     }
-    let curator = await User.findOne({ id: runDB.createdBy.id });
-    if (!curator) {
-      curator = await checkMember(interaction.user)
+    if (runDB.settings.curatorcut === "yes") {
+      let curator = await User.findOne({ id: runDB.createdBy.id });
+      if (!curator) {
+        curator = await checkMember(interaction.user);
+      }
+      let curatorCut = runDB.gold * cuts[runDB.type].curator;
+      curator.balance = curator.balance + curatorCut;
+      await curator.save();
+      sendBalanceUpdate(curator, runDB, curatorCut);
     }
-    let curatorCut = runDB.gold * cuts[runDB.type].curator;
-    curator.balance = curator.balance + curatorCut;
-    await curator.save();
-    sendBalanceUpdate(curator, runDB, curatorCut);
     message.edit({
       content: `This run has been marked as approved by ${interaction.user.tag}. ${run.url}`,
       components: [],

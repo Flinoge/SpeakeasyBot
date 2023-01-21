@@ -41,7 +41,13 @@ export default {
         .setRequired(true)
     )
     .addStringOption((option) =>
-      option.setName("key").setDescription("The key of the M+ Sale (Optional)")
+      option
+        .setName("curatorcut")
+        .setDescription("Wether or not Curator gets a cut (yes/no).")
+        .setAutocomplete(true)
+    )
+    .addStringOption((option) =>
+      option.setName("key").setDescription("The key of the M+ Sale")
     ),
   async autocomplete(interaction) {
     const focusedOption = interaction.options.getFocused(true);
@@ -52,19 +58,39 @@ export default {
       });
       let servers = banks.map((b) => ({ name: b.server, value: b.server }));
       await interaction.respond(servers);
+    } else if (focusedOption.name === "curatorcut") {
+      await interaction.respond([
+        { name: "Yes", value: "yes" },
+        { name: "No", value: "no" },
+      ]);
     }
   },
   async execute(interaction) {
+    let curatorcut = interaction.options.getString("curatorcut");
+    if (!curatorcut) {
+      curatorcut = "yes";
+    } else {
+      curatorcut = curatorcut.toLowerCase();
+    }
+    if (curatorcut !== "no" && curatorcut !== "yes") {
+      sendCommandError(
+        interaction.user,
+        'CuratorCut must either be "yes" or "no".'
+      );
+      return;
+    }
     let gold = interaction.options.getNumber("gold");
     gold = gold / 1000.0;
-    const boosterCuts = gold * cuts["M+"].booster;
-    const server = interaction.options.getString("server");
+    const boosterCuts = curatorcut === "yes" ? gold * cuts["M+"].booster : gold;
+    let server = interaction.options.getString("server");
     const buyer = interaction.options.getString("buyer");
     const availability = interaction.options.getString("availability");
     const level = interaction.options.getNumber("level");
     const key = interaction.options.getString("key") || false;
     let servers = await availableServers();
-    let serverIndex = servers.find((s) => s.server === server);
+    let serverIndex = servers.find(
+      (s) => s.server.toLowerCase() === server.toLowerCase()
+    );
     if (!serverIndex) {
       sendCommandError(
         interaction.user,
@@ -72,6 +98,7 @@ export default {
       );
       return;
     } else {
+      server = serverIndex.server;
       serverIndex.amount = serverIndex.amount + gold;
     }
     const messageEmbed = new EmbedBuilder()
@@ -111,26 +138,26 @@ export default {
     if (!mPlusRole) {
       sendCommandError(
         interaction.user,
-        "\"M+ sales\" role does not exist on the server."
+        '"M+ sales" role does not exist on the server.'
       );
       return;
     }
-    const dps = message.guild.emojis.cache.find(
+    const dps = interaction.guild.emojis.cache.find(
       (emoji) => emoji.name === "dps"
     );
-    const healer = message.guild.emojis.cache.find(
+    const healer = interaction.guild.emojis.cache.find(
       (emoji) => emoji.name === "healer"
     );
-    const tank = message.guild.emojis.cache.find(
+    const tank = interaction.guild.emojis.cache.find(
       (emoji) => emoji.name === "tank"
     );
-    const havekey = message.guild.emojis.cache.find(
+    const havekey = interaction.guild.emojis.cache.find(
       (emoji) => emoji.name === "havekey"
     );
     if (!dps || !healer || !tank || !havekey) {
       sendCommandError(
         interaction.user,
-        "One or more emojis do not exist specified does not exist in system."
+        "One or more emojis do not exist in server."
       );
       return;
     }
@@ -150,6 +177,7 @@ export default {
         cuts: boosterCuts,
         availability,
         buyer,
+        curatorcut,
       },
       createdBy: {
         username: interaction.user.username,

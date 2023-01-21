@@ -61,7 +61,6 @@ export default {
         .setName("havekey")
         .setDescription("Select a someone with a key")
         .setAutocomplete(true)
-        .setRequired(true)
     ),
   async autocomplete(interaction) {
     const focusedOption = interaction.options.getFocused(true);
@@ -103,16 +102,19 @@ export default {
           return;
         }
         let reactedUsers = await reaction.users.fetch();
-        const otherRoles = [
-          interaction.options.getString("tank"),
-          interaction.options.getString("healer"),
-          interaction.options.getString("dps1"),
-          interaction.options.getString("dps2"),
-        ];
-        if (role === "havekey") {
-          reactedUsers = reactedUsers.filter(
-            (user) => otherRoles.indexOf(user.toString()) !== -1
-          );
+        let otherRoles = [];
+        if (config.env === "production") {
+          otherRoles = [
+            interaction.options.getString("tank"),
+            interaction.options.getString("healer"),
+            interaction.options.getString("dps1"),
+            interaction.options.getString("dps2"),
+          ];
+          if (role === "havekey") {
+            reactedUsers = reactedUsers.filter(
+              (user) => otherRoles.indexOf(user.toString()) !== -1
+            );
+          }
         }
         const users = await Promise.all(
           reactedUsers
@@ -158,33 +160,43 @@ export default {
       const dps2 = interaction.options.getString("dps2");
       const keyholder = interaction.options.getString("havekey");
       const possibleReactors = [tank, healer, dps1, dps2];
-      const keyParticipants = [mentionToId(tank)];
-      if (keyParticipants.indexOf(mentionToId(healer)) === -1) {
-        keyParticipants.push(mentionToId(healer));
+      let keyParticipants = [];
+      if (config.env === "production") {
+        keyParticipants = [mentionToId(tank)];
+        if (keyParticipants.indexOf(mentionToId(healer)) === -1) {
+          keyParticipants.push(mentionToId(healer));
+        } else {
+          sendCommandError(
+            interaction.user,
+            "One or more selected users are repeated in run."
+          );
+          return;
+        }
+        if (keyParticipants.indexOf(mentionToId(dps1)) === -1) {
+          keyParticipants.push(mentionToId(dps1));
+        } else {
+          sendCommandError(
+            interaction.user,
+            "One or more selected users are repeated in run."
+          );
+          return;
+        }
+        if (keyParticipants.indexOf(mentionToId(dps2)) === -1) {
+          keyParticipants.push(mentionToId(dps2));
+        } else {
+          sendCommandError(
+            interaction.user,
+            "One or more selected users are repeated in run."
+          );
+          return;
+        }
       } else {
-        sendCommandError(
-          interaction.user,
-          "One or more selected users are repeated in run."
-        );
-        return;
-      }
-      if (keyParticipants.indexOf(mentionToId(dps1)) === -1) {
-        keyParticipants.push(mentionToId(dps1));
-      } else {
-        sendCommandError(
-          interaction.user,
-          "One or more selected users are repeated in run."
-        );
-        return;
-      }
-      if (keyParticipants.indexOf(mentionToId(dps2)) === -1) {
-        keyParticipants.push(mentionToId(dps2));
-      } else {
-        sendCommandError(
-          interaction.user,
-          "One or more selected users are repeated in run."
-        );
-        return;
+        keyParticipants = [
+          mentionToId(tank),
+          mentionToId(healer),
+          mentionToId(dps1),
+          mentionToId(dps2),
+        ];
       }
       for (let i = 0; i < keyParticipants.length; i++) {
         const participant = await User.findOne({
@@ -218,14 +230,20 @@ export default {
           { name: "Tank", value: `${tank}`, inline: true },
           { name: "Healer", value: `${healer}`, inline: true },
           { name: "DPS", value: `${dps1}`, inline: true },
-          { name: "DPS", value: `${dps2}`, inline: true },
-          { name: "Key Holder", value: `${keyholder}`, inline: true }
+          { name: "DPS", value: `${dps2}`, inline: true }
         )
         .setTimestamp()
         .setFooter({
           text: "React when run is done.",
           iconURL: interaction.member.user.avatarURL(),
         });
+      if (keyholder) {
+        messageEmbed.addFields({
+          name: "Key Holder",
+          value: `${keyholder}`,
+          inline: true,
+        });
+      }
       await run.edit({
         content: `${tank}, ${healer}, ${dps1}, ${dps2}`,
         embeds: [messageEmbed],
@@ -296,6 +314,13 @@ export default {
                   text: `This has been marked done by ${interaction.member.user.tag} and is awaiting approval.`,
                   iconURL: interaction.member.user.avatarURL(),
                 });
+              if (keyholder) {
+                messageEmbed.addFields({
+                  name: "Key Holder",
+                  value: `${keyholder}`,
+                  inline: true,
+                });
+              }
               await run.edit({
                 content: ``,
                 embeds: [messageEmbed],

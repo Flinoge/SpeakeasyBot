@@ -51,7 +51,8 @@ export default {
   },
   async execute(interaction) {
     const user = interaction.options.getString("user");
-    const gold = interaction.options.getNumber("gold");
+    let gold = interaction.options.getNumber("gold");
+    gold = gold / 1000.0;
     const dbUser = await User.findOne({ id: user });
     if (!dbUser) {
       sendCommandError(
@@ -78,7 +79,7 @@ export default {
     };
     await Transaction.create(transaction);
     dbUser.save();
-    sendPaymentUpdate(dbUser, gold);
+    sendPaymentUpdate(dbUser, gold * -1);
     sendCommandConfirmation(
       interaction.user,
       `Deducted ${dbUser.settings.username} for ${gold}k`

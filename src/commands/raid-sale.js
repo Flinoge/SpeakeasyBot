@@ -53,13 +53,6 @@ export default {
           "Buyer Gold Amounts Seperated by Commas (10000000,2000000)"
         )
     )
-    .addStringOption((option) =>
-      option
-        .setName("boosters")
-        .setDescription(
-          "Boosters Tagged Seperated by Commas (Ex-Thrall,Exx-Thrall)"
-        )
-    )
     .setDefaultMemberPermissions(
       PermissionFlagsBits[security.permissions.admin]
     ),
@@ -89,21 +82,22 @@ export default {
     }
   },
   async execute(interaction) {
-    const server = interaction.options.getString("server");
+    let server = interaction.options.getString("server");
     const date = interaction.options.getString("date");
     let buyers = interaction.options.getString("buyers")?.replace(/\s+/g, "");
     let gold = interaction.options.getString("gold")?.replace(/\s+/g, "");
-    let boosters = interaction.options
-      .getString("boosters")
-      ?.replace(/\s+/g, "");
     let servers = await availableServers();
-    let serverIndex = servers.find((s) => s.server === server);
+    let serverIndex = servers.find(
+      (s) => s.server.toLowerCase() === server.toLowerCase()
+    );
     if (!serverIndex) {
       sendCommandError(
         interaction.user,
         "Server specified is not among available servers."
       );
       return;
+    } else {
+      server = serverIndex.server;
     }
     const checkDate = moment(date, "YYYY-MM-DD hh:mm");
     if (!checkDate.isValid()) {
@@ -115,7 +109,6 @@ export default {
     }
     buyers = buyers?.split(",");
     gold = gold?.split(",");
-    boosters = boosters?.split(",");
     if (buyers?.length !== gold?.length) {
       sendCommandError(
         interaction.user,
@@ -134,26 +127,16 @@ export default {
       .setThumbnail(interaction.member.user.avatarURL())
       .setTimestamp()
       .setFooter({
-        text: "You may add Buyers/Boosters.",
+        text: "React to signup for this sale.",
         iconURL: interaction.member.user.avatarURL(),
       });
     const fields = [
-      { name: "Boosters", value: "None" },
+      { name: "Current Signups", value: "\u200B" },
+      { name: "Tank", value: "None", inline: true },
+      { name: "Healer", value: "None", inline: true },
+      { name: "DPS", value: "None", inline: true },
       // { name: "Buyers", value: "None" },
     ];
-    for (let i = 0; i < boosters?.length; i++) {
-      if (boosters[i] !== "") {
-        if (
-          boosters[i].indexOf("<") === -1 ||
-          boosters[i].indexOf("@") === -1 ||
-          boosters[i].indexOf(">") === -1
-        ) {
-          sendCommandError(interaction.user, "Boosters must discord tagged.");
-          return;
-        }
-        fields[0].value += `${i === 0 ? "" : ", "}${boosters[i]}`;
-      }
-    }
     for (let i = 0; i < buyers?.length; i++) {
       if (buyers[i] !== "" && gold[i] !== "") {
         if (isNaN(gold[i]) && isNaN(parseFloat(gold[i]))) {
@@ -183,7 +166,23 @@ export default {
     if (!raiderRole) {
       sendCommandError(
         interaction.user,
-        "\"Raider\" role does not exist on the server."
+        '"Raider" role does not exist on the server.'
+      );
+      return;
+    }
+    const dps = interaction.guild.emojis.cache.find(
+      (emoji) => emoji.name === "dps"
+    );
+    const healer = interaction.guild.emojis.cache.find(
+      (emoji) => emoji.name === "healer"
+    );
+    const tank = interaction.guild.emojis.cache.find(
+      (emoji) => emoji.name === "tank"
+    );
+    if (!dps || !healer || !tank) {
+      sendCommandError(
+        interaction.user,
+        "One or more emojis do not existin server."
       );
       return;
     }
@@ -195,16 +194,13 @@ export default {
     if (buyers) {
       settings.buyers = buyers.map((b, index) => ({
         name: b,
-        gold: gold[index],
+        gold: gold[index] / 1000.0,
       }));
     }
     let participants = [];
-    if (boosters) {
-      participants = boosters.map((b) => ({ id: mentionToId(b) }));
-    }
     let totalGold = 0;
     if (gold) {
-      totalGold = gold.reduce((t, c) => t + Number(c), 0);
+      totalGold = gold.reduce((t, c) => t + Number(c) / 1000.0, 0);
     }
     await Run.create({
       type: "Raid",

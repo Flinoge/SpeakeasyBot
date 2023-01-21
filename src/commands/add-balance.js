@@ -38,7 +38,6 @@ export default {
     const focusedValue = focusedOption.value;
     if (focusedOption.name === "user") {
       const users = await User.find({
-        balance: { $gt: 0 },
         "settings.username": { $regex: `.*${focusedValue}.*` },
       })
         .limit(10)
@@ -52,7 +51,8 @@ export default {
   },
   async execute(interaction) {
     const user = interaction.options.getString("user");
-    const gold = interaction.options.getNumber("gold");
+    let gold = interaction.options.getNumber("gold");
+    gold = gold / 1000.0;
     const dbUser = await User.findOne({ id: user });
     if (!dbUser) {
       sendCommandError(
@@ -61,10 +61,10 @@ export default {
       );
       return;
     }
-    dbUser.balance = dbUser.balance - gold;
+    dbUser.balance = dbUser.balance + gold;
     let transaction = {
       user: dbUser.id,
-      amount: gold * -1,
+      amount: gold,
       settings: {
         description: "Add-Balance Command",
       },

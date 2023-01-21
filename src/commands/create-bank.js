@@ -5,12 +5,9 @@ import {
 } from "discord.js";
 import User from "../models/user.js";
 import { security } from "../utils/constants.js";
-import {
-  sendPaymentUpdate,
-  sendCommandConfirmation,
-} from "../utils/methods.js";
+import { sendCommandConfirmation } from "../utils/methods.js";
 import Transaction from "../models/transaction.js";
-import Bank from "../models/bank.js"
+import Bank from "../models/bank.js";
 
 export default {
   permission: "admin",
@@ -34,7 +31,8 @@ export default {
     ),
   async execute(interaction) {
     const server = interaction.options.getString("server");
-    const gold = interaction.options.getNumber("gold");
+    let gold = interaction.options.getNumber("gold");
+    gold = gold / 1000.0;
     const bank = {
       server,
       amount: gold,

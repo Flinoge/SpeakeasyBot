@@ -80,29 +80,49 @@ export default {
       };
       transactions.push(transaction2);
     }
-    const curator = await User.findOne({ id: runDB.createdBy.id });
-    if (!curator) {
-      curator = await checkMember(interaction.user)
+    if (runDB.settings.curatorcut === "yes") {
+      const curator = await User.findOne({ id: runDB.createdBy.id });
+      if (!curator) {
+        curator = await checkMember(interaction.user);
+      }
+      let curatorCut = runDB.gold * cuts[runDB.type].curator;
+      let transaction1 = {
+        user: curator.id,
+        amount: curatorCut,
+        server: runDB.server,
+        run: runDB._id,
+        settings: {
+          description: "Completed Run Balance Update",
+        },
+        createdBy: {
+          username: interaction.user.username,
+          id: interaction.user.id,
+        },
+        updatedBy: {
+          username: interaction.user.username,
+          id: interaction.user.id,
+        },
+      };
+      transactions.push(transaction1);
+      const transaction2 = {
+        user: curator.id,
+        amount: curatorCut * -1,
+        server: runDB.server,
+        run: runDB._id,
+        settings: {
+          description: "Completed Run Payout",
+        },
+        createdBy: {
+          username: interaction.user.username,
+          id: interaction.user.id,
+        },
+        updatedBy: {
+          username: interaction.user.username,
+          id: interaction.user.id,
+        },
+      };
+      transactions.push(transaction2);
     }
-    let curatorCut = runDB.gold * cuts[runDB.type].curator;
-    let transaction1 = {
-      user: curator.id,
-      amount: curatorCut,
-      server: runDB.server,
-      run: runDB._id,
-      settings: {
-        description: "Completed Run Balance Update",
-      },
-      createdBy: {
-        username: interaction.user.username,
-        id: interaction.user.id,
-      },
-      updatedBy: {
-        username: interaction.user.username,
-        id: interaction.user.id,
-      },
-    };
-    transactions.push(transaction1);
     // Make sure it doesnt get ran 2 times
     const doubleCheck = await Run.findOne({
       messageId: run.id,
@@ -114,24 +134,6 @@ export default {
       );
       return;
     }
-    const transaction2 = {
-      user: curator.id,
-      amount: curatorCut * -1,
-      server: runDB.server,
-      run: runDB._id,
-      settings: {
-        description: "Completed Run Payout",
-      },
-      createdBy: {
-        username: interaction.user.username,
-        id: interaction.user.id,
-      },
-      updatedBy: {
-        username: interaction.user.username,
-        id: interaction.user.id,
-      },
-    };
-    transactions.push(transaction2);
     runDB.status = "Done";
     await runDB.save();
     // Once all is ran, save 1 time.

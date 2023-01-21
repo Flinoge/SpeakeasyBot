@@ -67,8 +67,8 @@ export async function sendPaymentUpdate(user, gold) {
     })
     .setThumbnail(client.user.avatarURL())
     .addFields({
-      name: `Payment`,
-      value: `Paid out for ${gold}k.`,
+      name: `Balance Change`,
+      value: `Balance changed by: ${gold}k.`,
     })
     .setTimestamp()
     .setFooter({

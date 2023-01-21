@@ -67,16 +67,21 @@ export default {
   },
   async execute(interaction) {
     const user = interaction.options.getString("user");
-    const gold = interaction.options.getNumber("gold");
-    const server = interaction.options.getNumber("server");
+    let gold = interaction.options.getNumber("gold");
+    gold = gold / 1000.0;
+    let server = interaction.options.getString("server");
     let servers = await availableServers();
-    let serverIndex = servers.find((s) => s.server === server);
+    let serverIndex = servers.find(
+      (s) => s.server.toLowerCase() === server.toLowerCase()
+    );
     if (!serverIndex) {
       sendCommandError(
         interaction.user,
         "Server specified is not among available servers."
       );
       return;
+    } else {
+      server = serverIndex.server;
     }
     const dbUser = await User.findOne({ id: user });
     if (!dbUser) {
@@ -109,7 +114,7 @@ export default {
       return;
     }
     dbUser.save();
-    sendPaymentUpdate(dbUser, gold);
+    sendPaymentUpdate(dbUser, gold * -1);
     sendCommandConfirmation(
       interaction.user,
       `Payment to ${dbUser.settings.username} for ${gold}k`
