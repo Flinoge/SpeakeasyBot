@@ -26,7 +26,7 @@ export default {
   guild_id: process.env.DISCORD_SERVER || "",
   admin_channel: process.env.DISCORD_ADMIN_CHANNEL || "",
   mongo: {
-    uri: `mongodb+srv://localhost@${process.env.MONGO_DATABASE}/?retryWrites=true&w=majority`,
+    uri: `mongodb://127.0.0.1`,
     port: process.env.MONGO_PORT || 27017,
     db: "speakeasy",
   },
