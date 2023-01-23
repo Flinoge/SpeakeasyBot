@@ -143,6 +143,13 @@ export default {
     const run = await interaction.channel.messages.fetch(
       interaction.options.getString("run")
     );
+    if (!run) {
+      sendCommandError(
+        interaction.user,
+        "Run message specified does not exist in discord."
+      );
+      return;
+    }
     const runDB = await Run.findOne({
       messageId: interaction.options.getString("run"),
     });

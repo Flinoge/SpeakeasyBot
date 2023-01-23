@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 const types = ["M+", "Raid"];
 
-const stati = ["Pending", "Started", "Awaiting Approval", "Done"];
+const stati = ["Cancelled", "Pending", "Started", "Awaiting Approval", "Done"];
 
 const Schema = new mongoose.Schema({
   type: { type: String, required: true, enum: types },
