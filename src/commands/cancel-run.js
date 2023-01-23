@@ -6,6 +6,8 @@ import {
 import { security } from "../utils/constants.js";
 import { sendCommandConfirmation } from "../utils/methods.js";
 import { sendCommandError } from "../utils/methods.js";
+import Run from "../models/run.js";
+import moment from "moment";
 
 export default {
   permission: "admin",
@@ -26,7 +28,7 @@ export default {
     const focusedOption = interaction.options.getFocused(true);
     const focusedValue = focusedOption.value;
     if (focusedOption.name === "run") {
-      const pendingRuns = await Run.find({ status: "Pending" });
+      const pendingRuns = await Run.find({ status: "Pending", type: "M+" });
       let choices = pendingRuns.map((r) => ({
         name: `${r.type} (${moment(r.createdAt).format(`YYYY-M-D h:m`)})`,
         value: r.messageId,
@@ -89,7 +91,7 @@ export default {
       });
       runDB.status = "Cancelled";
       runDB.save();
-      sendCommandConfirmation(interaction.user, `Run has been cancelled.`);
+      sendCommandConfirmation(interaction.user, `Cancel Run.`);
     }
   },
 };

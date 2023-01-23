@@ -82,7 +82,7 @@ export default {
     sendPaymentUpdate(dbUser, gold * -1);
     sendCommandConfirmation(
       interaction.user,
-      `Deducted ${dbUser.settings.username} for ${gold}k`
+      `Deducting ${dbUser.settings.username} for ${gold}k`
     );
   },
 };

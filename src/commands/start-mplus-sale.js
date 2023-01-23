@@ -66,7 +66,7 @@ export default {
     const focusedOption = interaction.options.getFocused(true);
     const focusedValue = focusedOption.value;
     if (focusedOption.name === "run") {
-      const pendingRuns = await Run.find({ status: "Pending" });
+      const pendingRuns = await Run.find({ status: "Pending", type: "M+" });
       let choices = pendingRuns.map((r) => ({
         name: `${r.type} (${moment(r.createdAt).format(`YYYY-M-D h:m`)})`,
         value: r.messageId,

@@ -64,7 +64,7 @@ export default {
     await Transaction.create(transaction);
     sendCommandConfirmation(
       interaction.user,
-      `Bank created on ${server} with ${gold}k`
+      `Bank creation on ${server} with ${gold}k`
     );
   },
 };
