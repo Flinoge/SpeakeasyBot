@@ -172,6 +172,7 @@ export default {
       server,
       participants: [],
       messageId: message.id,
+      channelId: message.channel.id,
       settings: {
         key,
         level,

@@ -16,6 +16,7 @@ const Schema = new mongoose.Schema({
   ],
   status: { type: String, required: true, enum: stati, default: "Pending" },
   messageId: { type: String, required: true },
+  channelId: { type: String },
   settings: { type: Object, required: false, default: {} },
   createdAt: { type: Date, required: true, default: Date.now() },
   createdBy: {

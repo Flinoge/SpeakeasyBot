@@ -4,8 +4,7 @@ import {
   PermissionFlagsBits,
 } from "discord.js";
 import { security } from "../utils/constants.js";
-import { sendCommandConfirmation } from "../utils/methods.js";
-import { sendCommandError } from "../utils/methods.js";
+import { sendCommandConfirmation, messageToRun } from "../utils/methods.js";
 import Run from "../models/run.js";
 import moment from "moment";
 
@@ -42,56 +41,40 @@ export default {
     }
   },
   async execute(interaction) {
-    const run = await interaction.channel.messages.fetch(
+    const { runDB, message } = await messageToRun(
       interaction.options.getString("run")
     );
-    if (!run) {
-      sendCommandError(
-        interaction.user,
-        "Run message specified does not exist in discord."
-      );
+    if (!runDB || !message) {
       return;
     }
-    const runDB = await Run.findOne({
-      messageId: interaction.options.getString("run"),
-    });
-    if (!runDB) {
-      sendCommandError(
-        interaction.user,
-        "Run specified does not exist in system."
-      );
-      return;
-    }
-    if (run && runDB) {
-      let messageEmbed = new EmbedBuilder()
-        .setColor(0x0099ff)
-        .setTitle("M+ Sale")
-        .setAuthor({
-          name: interaction.member.user.tag,
-          iconURL: interaction.member.user.avatarURL(),
-        })
-        .setThumbnail(interaction.member.user.avatarURL())
-        .addFields(
-          {
-            name: `${runDB.settings.key ? `${runDB.settings.key} ` : ""}+${
-              runDB.settings.level
-            } `,
-            value: `${runDB.settings.cuts}k cuts`,
-          },
-          { name: "Run Time", value: `This run has been cancelled.` }
-        )
-        .setTimestamp()
-        .setFooter({
-          text: "Cancelled.",
-          iconURL: interaction.member.user.avatarURL(),
-        });
-      await run.edit({
-        content: ``,
-        embeds: [messageEmbed],
+    let messageEmbed = new EmbedBuilder()
+      .setColor(0x0099ff)
+      .setTitle("M+ Sale")
+      .setAuthor({
+        name: interaction.member.user.tag,
+        iconURL: interaction.member.user.avatarURL(),
+      })
+      .setThumbnail(interaction.member.user.avatarURL())
+      .addFields(
+        {
+          name: `${runDB.settings.key ? `${runDB.settings.key} ` : ""}+${
+            runDB.settings.level
+          } `,
+          value: `${runDB.settings.cuts}k cuts`,
+        },
+        { name: "Run Time", value: `This run has been cancelled.` }
+      )
+      .setTimestamp()
+      .setFooter({
+        text: "Cancelled.",
+        iconURL: interaction.member.user.avatarURL(),
       });
-      runDB.status = "Cancelled";
-      runDB.save();
-      sendCommandConfirmation(interaction.user, `Cancel Run.`);
-    }
+    await message.edit({
+      content: ``,
+      embeds: [messageEmbed],
+    });
+    runDB.status = "Cancelled";
+    runDB.save();
+    sendCommandConfirmation(interaction.user, `Cancel Run.`);
   },
 };

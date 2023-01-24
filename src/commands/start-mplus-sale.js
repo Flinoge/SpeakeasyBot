@@ -12,6 +12,7 @@ import {
   mentionToId,
   checkMember,
   sendCommandError,
+  getChannelById,
 } from "../utils/methods.js";
 import config from "../config.js";
 import Client from "../discord.js";
@@ -140,237 +141,186 @@ export default {
     }
   },
   async execute(interaction) {
-    const run = await interaction.channel.messages.fetch(
+    const { runDB, message } = await messageToRun(
       interaction.options.getString("run")
     );
-    if (!run) {
-      sendCommandError(
-        interaction.user,
-        "Run message specified does not exist in discord."
-      );
+    if (!runDB || !message) {
       return;
     }
-    const runDB = await Run.findOne({
-      messageId: interaction.options.getString("run"),
-    });
-    if (!runDB) {
-      sendCommandError(
-        interaction.user,
-        "Run specified does not exist in system."
-      );
-      return;
-    }
-    if (run && runDB) {
-      const tank = interaction.options.getString("tank");
-      const healer = interaction.options.getString("healer");
-      const dps1 = interaction.options.getString("dps1");
-      const dps2 = interaction.options.getString("dps2");
-      const keyholder = interaction.options.getString("havekey");
-      const possibleReactors = [tank, healer, dps1, dps2];
-      let keyParticipants = [];
-      if (config.env === "production") {
-        keyParticipants = [mentionToId(tank)];
-        if (keyParticipants.indexOf(mentionToId(healer)) === -1) {
-          keyParticipants.push(mentionToId(healer));
-        } else {
-          sendCommandError(
-            interaction.user,
-            "One or more selected users are repeated in run."
-          );
-          return;
-        }
-        if (keyParticipants.indexOf(mentionToId(dps1)) === -1) {
-          keyParticipants.push(mentionToId(dps1));
-        } else {
-          sendCommandError(
-            interaction.user,
-            "One or more selected users are repeated in run."
-          );
-          return;
-        }
-        if (keyParticipants.indexOf(mentionToId(dps2)) === -1) {
-          keyParticipants.push(mentionToId(dps2));
-        } else {
-          sendCommandError(
-            interaction.user,
-            "One or more selected users are repeated in run."
-          );
-          return;
-        }
+    const tank = interaction.options.getString("tank");
+    const healer = interaction.options.getString("healer");
+    const dps1 = interaction.options.getString("dps1");
+    const dps2 = interaction.options.getString("dps2");
+    const keyholder = interaction.options.getString("havekey");
+    const possibleReactors = [tank, healer, dps1, dps2];
+    let keyParticipants = [];
+    if (config.env === "production") {
+      keyParticipants = [mentionToId(tank)];
+      if (keyParticipants.indexOf(mentionToId(healer)) === -1) {
+        keyParticipants.push(mentionToId(healer));
       } else {
-        keyParticipants = [
-          mentionToId(tank),
-          mentionToId(healer),
-          mentionToId(dps1),
-          mentionToId(dps2),
-        ];
+        sendCommandError(
+          interaction.user,
+          "One or more selected users are repeated in run."
+        );
+        return;
       }
-      for (let i = 0; i < keyParticipants.length; i++) {
-        const participant = await User.findOne({
-          id: keyParticipants[i],
-        });
-        if (!participant) {
-          sendCommandError(
-            interaction.user,
-            "One or more selected users do not exist in system."
-          );
-          return;
-        }
+      if (keyParticipants.indexOf(mentionToId(dps1)) === -1) {
+        keyParticipants.push(mentionToId(dps1));
+      } else {
+        sendCommandError(
+          interaction.user,
+          "One or more selected users are repeated in run."
+        );
+        return;
       }
-      let messageEmbed = new EmbedBuilder()
-        .setColor(0x0099ff)
-        .setTitle("M+ Sale")
-        .setAuthor({
-          name: interaction.member.user.tag,
-          iconURL: interaction.member.user.avatarURL(),
-        })
-        .setThumbnail(interaction.member.user.avatarURL())
-        .addFields(
-          {
-            name: `${runDB.settings.key ? `${runDB.settings.key} ` : ""}+${
-              runDB.settings.level
-            } `,
-            value: `${runDB.settings.cuts}k cuts`,
-          },
-          { name: "Run Time", value: `${runDB.settings.availability}` },
-          { name: "\u200B", value: "\u200B" },
-          { name: "Tank", value: `${tank}`, inline: true },
-          { name: "Healer", value: `${healer}`, inline: true },
-          { name: "DPS", value: `${dps1}`, inline: true },
-          { name: "DPS", value: `${dps2}`, inline: true }
-        )
-        .setTimestamp()
-        .setFooter({
-          text: "React when run is done.",
-          iconURL: interaction.member.user.avatarURL(),
-        });
-      if (keyholder) {
-        messageEmbed.addFields({
-          name: "Key Holder",
-          value: `${keyholder}`,
-          inline: true,
-        });
+      if (keyParticipants.indexOf(mentionToId(dps2)) === -1) {
+        keyParticipants.push(mentionToId(dps2));
+      } else {
+        sendCommandError(
+          interaction.user,
+          "One or more selected users are repeated in run."
+        );
+        return;
       }
-      await run.edit({
-        content: `${tank}, ${healer}, ${dps1}, ${dps2}`,
-        embeds: [messageEmbed],
+    } else {
+      keyParticipants = [
+        mentionToId(tank),
+        mentionToId(healer),
+        mentionToId(dps1),
+        mentionToId(dps2),
+      ];
+    }
+    for (let i = 0; i < keyParticipants.length; i++) {
+      const participant = await User.findOne({
+        id: keyParticipants[i],
       });
-      try {
-        runDB.participants = [
-          {
-            id: mentionToId(tank),
-            cut: runDB.settings.cuts,
-          },
-          {
-            id: mentionToId(healer),
-            cut: runDB.settings.cuts,
-          },
-          {
-            id: mentionToId(dps1),
-            cut: runDB.settings.cuts,
-          },
-          {
-            id: mentionToId(dps2),
-            cut: runDB.settings.cuts,
-          },
-        ];
-        runDB.status = "Started";
-        await runDB.save();
-        await run.reactions.removeAll();
-        await run.react("✅");
-        const filter = (reaction, user) => {
-          return (
-            ["✅"].includes(reaction.emoji.name) &&
-            possibleReactors.indexOf(user.toString()) !== -1
-          );
-        };
-        run
-          .awaitReactions({ filter, max: 1, time: 5400000, errors: ["time"] })
-          .then(async (collected) => {
-            const reaction = collected.first();
+      if (!participant) {
+        sendCommandError(
+          interaction.user,
+          "One or more selected users do not exist in system."
+        );
+        return;
+      }
+    }
+    let messageEmbed = new EmbedBuilder()
+      .setColor(0x0099ff)
+      .setTitle("M+ Sale")
+      .setAuthor({
+        name: interaction.member.user.tag,
+        iconURL: interaction.member.user.avatarURL(),
+      })
+      .setThumbnail(interaction.member.user.avatarURL())
+      .addFields(
+        {
+          name: `${runDB.settings.key ? `${runDB.settings.key} ` : ""}+${
+            runDB.settings.level
+          } `,
+          value: `${runDB.settings.cuts}k cuts`,
+        },
+        { name: "Run Time", value: `${runDB.settings.availability}` },
+        { name: "\u200B", value: "\u200B" },
+        { name: "Tank", value: `${tank}`, inline: true },
+        { name: "Healer", value: `${healer}`, inline: true },
+        { name: "DPS", value: `${dps1}`, inline: true },
+        { name: "DPS", value: `${dps2}`, inline: true }
+      )
+      .setTimestamp()
+      .setFooter({
+        text: "React when run is done.",
+        iconURL: interaction.member.user.avatarURL(),
+      });
+    if (keyholder) {
+      messageEmbed.addFields({
+        name: "Key Holder",
+        value: `${keyholder}`,
+        inline: true,
+      });
+    }
+    await message.edit({
+      content: `${tank}, ${healer}, ${dps1}, ${dps2}`,
+      embeds: [messageEmbed],
+    });
+    try {
+      runDB.participants = [
+        {
+          id: mentionToId(tank),
+          cut: runDB.settings.cuts,
+        },
+        {
+          id: mentionToId(healer),
+          cut: runDB.settings.cuts,
+        },
+        {
+          id: mentionToId(dps1),
+          cut: runDB.settings.cuts,
+        },
+        {
+          id: mentionToId(dps2),
+          cut: runDB.settings.cuts,
+        },
+      ];
+      runDB.status = "Started";
+      await runDB.save();
+      await message.reactions.removeAll();
+      await message.react("✅");
+      const filter = (reaction, user) => {
+        return (
+          ["✅"].includes(reaction.emoji.name) &&
+          possibleReactors.indexOf(user.toString()) !== -1
+        );
+      };
+      message
+        .awaitReactions({ filter, max: 1, time: 5400000, errors: ["time"] })
+        .then(async (collected) => {
+          const reaction = collected.first();
 
-            if (reaction.emoji.name === "✅") {
-              messageEmbed = new EmbedBuilder()
-                .setColor(0x0099ff)
-                .setTitle("M+ Sale")
-                .setAuthor({
-                  name: interaction.member.user.tag,
-                  iconURL: interaction.member.user.avatarURL(),
-                })
-                .setThumbnail(interaction.member.user.avatarURL())
-                .addFields(
-                  {
-                    name: `${
-                      runDB.settings.key ? `${runDB.settings.key} ` : ""
-                    }+${runDB.settings.level} `,
-                    value: `${runDB.settings.cuts}k cuts`,
-                  },
-                  {
-                    name: "Run Completed Time",
-                    value: `${moment().format("YYYY-M-D h:m")}`,
-                  },
-                  { name: "\u200B", value: "\u200B" },
-                  { name: "Tank", value: `${tank}`, inline: true },
-                  { name: "Healer", value: `${healer}`, inline: true },
-                  { name: "DPS", value: `${dps1}`, inline: true },
-                  { name: "DPS", value: `${dps2}`, inline: true },
-                  { name: "Key Holder", value: `${keyholder}`, inline: true }
-                )
-                .setTimestamp()
-                .setFooter({
-                  text: `This has been marked done by ${interaction.member.user.tag} and is awaiting approval.`,
-                  iconURL: interaction.member.user.avatarURL(),
-                });
-              if (keyholder) {
-                messageEmbed.addFields({
-                  name: "Key Holder",
-                  value: `${keyholder}`,
-                  inline: true,
-                });
-              }
-              await run.edit({
-                content: ``,
-                embeds: [messageEmbed],
+          if (reaction.emoji.name === "✅") {
+            messageEmbed = new EmbedBuilder()
+              .setColor(0x0099ff)
+              .setTitle("M+ Sale")
+              .setAuthor({
+                name: interaction.member.user.tag,
+                iconURL: interaction.member.user.avatarURL(),
+              })
+              .setThumbnail(interaction.member.user.avatarURL())
+              .addFields(
+                {
+                  name: `${
+                    runDB.settings.key ? `${runDB.settings.key} ` : ""
+                  }+${runDB.settings.level} `,
+                  value: `${runDB.settings.cuts}k cuts`,
+                },
+                {
+                  name: "Run Completed Time",
+                  value: `${moment().format("YYYY-M-D h:m")}`,
+                },
+                { name: "\u200B", value: "\u200B" },
+                { name: "Tank", value: `${tank}`, inline: true },
+                { name: "Healer", value: `${healer}`, inline: true },
+                { name: "DPS", value: `${dps1}`, inline: true },
+                { name: "DPS", value: `${dps2}`, inline: true },
+                { name: "Key Holder", value: `${keyholder}`, inline: true }
+              )
+              .setTimestamp()
+              .setFooter({
+                text: `This has been marked done by ${interaction.member.user.tag} and is awaiting approval.`,
+                iconURL: interaction.member.user.avatarURL(),
               });
-              runDB.status = "Awaiting Approval";
-              const channel = Client.channels.cache.get(config.admin_channel);
-              if (!channel) {
-                sendCommandError(
-                  interaction.user,
-                  "Channel specified does not exist in discord."
-                );
-                return;
-              }
-              await runDB.save();
-              const row = new ActionRowBuilder().addComponents(
-                new ButtonBuilder()
-                  .setCustomId("complete-run")
-                  .setLabel("Approve")
-                  .setStyle(ButtonStyle.Primary)
-              );
-              const row2 = new ActionRowBuilder().addComponents(
-                new ButtonBuilder()
-                  .setCustomId("complete-and-payout-run")
-                  .setLabel("Approve w/ Payouts")
-                  .setStyle(ButtonStyle.Primary)
-              );
-              channel.send({
-                content: `${interaction.user.toString()} There is a run waiting approval. ${
-                  run.url
-                }`,
-                components: [row, row2],
+            if (keyholder) {
+              messageEmbed.addFields({
+                name: "Key Holder",
+                value: `${keyholder}`,
+                inline: true,
               });
             }
-          })
-          .catch((collected) => {
-            const channel = Client.channels.cache.get(config.admin_channel);
-            if (!channel) {
-              sendCommandError(
-                interaction.user,
-                "Channel specified does not exist in discord."
-              );
-              return;
-            }
+            await message.edit({
+              content: ``,
+              embeds: [messageEmbed],
+            });
+            runDB.status = "Awaiting Approval";
+            const channel = getChannelById(config.admin_channel);
+            await runDB.save();
             const row = new ActionRowBuilder().addComponents(
               new ButtonBuilder()
                 .setCustomId("complete-run")
@@ -384,16 +334,37 @@ export default {
                 .setStyle(ButtonStyle.Primary)
             );
             channel.send({
-              content: `${interaction.user.toString()} There is a run that has been going for 1.5 Hours and isn't completed. ${
-                run.url
+              content: `${interaction.user.toString()} There is a run waiting approval. ${
+                message.url
               }`,
               components: [row, row2],
             });
+          }
+        })
+        .catch((collected) => {
+          const channel = getChannelById(config.admin_channel);
+          const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+              .setCustomId("complete-run")
+              .setLabel("Approve")
+              .setStyle(ButtonStyle.Primary)
+          );
+          const row2 = new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+              .setCustomId("complete-and-payout-run")
+              .setLabel("Approve w/ Payouts")
+              .setStyle(ButtonStyle.Primary)
+          );
+          channel.send({
+            content: `${interaction.user.toString()} There is a run that has been going for 1.5 Hours and isn't completed. ${
+              message.url
+            }`,
+            components: [row, row2],
           });
-      } catch (e) {
-        console.log(e);
-        console.log("Error Reacting on message.");
-      }
+        });
+    } catch (e) {
+      console.log(e);
+      console.log("Error Reacting on message.");
     }
   },
 };

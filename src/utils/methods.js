@@ -3,6 +3,7 @@ import client from "../discord.js";
 import { security } from "./constants.js";
 import Bank from "../models/bank.js";
 import User from "../models/user.js";
+import Run from "../models/run.js";
 
 export function mentionToId(mention) {
   return mention.replace("<", "").replace(">", "").replace("@", "");
@@ -154,4 +155,115 @@ export async function checkMember(user) {
     });
     return newUser;
   }
+}
+
+export async function findMessageInChannel(messageId, channel) {
+  const message = await channel.messages.fetch(messageId);
+  if (!message) {
+    return null;
+  }
+  return message;
+}
+
+export async function findMessageInAdminChannel(messageId) {
+  const channel = client.channels.cache.get(config.admin_channel);
+  if (!channel) {
+    sendCommandError(
+      interaction.user,
+      "Channel specified does not exist in discord."
+    );
+    return null;
+  }
+  const message = await channel.messages.fetch(messageId);
+  if (!message) {
+    sendCommandError(
+      interaction.user,
+      "Message specified does not exist in discord/channel."
+    );
+    return null;
+  }
+  return message;
+}
+
+export async function getChannelById(channelId) {
+  const channel = client.channels.cache.get(channelId);
+  if (!channel) {
+    return null;
+  }
+  return channel;
+}
+
+export async function runToMessage(run) {
+  channel = await getChannelById(run.channelId);
+  if (!channel) {
+    sendCommandError(
+      interaction.user,
+      "Channel specified does not exist in discord."
+    );
+    return null;
+  }
+  const message = await findMessageInChannel(run.messageId, channel);
+  if (!message) {
+    sendCommandError(
+      interaction.user,
+      "Message specified does not exist in discord/channel."
+    );
+    return null;
+  }
+  return message;
+}
+
+export async function messageToRun(messageId) {
+  const runDB = await Run.findOne({ messageId });
+  if (!runDB) {
+    sendCommandError(
+      interaction.user,
+      "Run specified does not exist in system."
+    );
+    return null;
+  }
+  const message = await runToMessage(runDB);
+  if (!message) return null;
+  return { message, runDB };
+}
+
+export async function formatBuyers(buyers, gold, description) {
+  buyers = buyers?.replace(/\s+/g, "").split(",");
+  gold = gold?.replace(/\s+/g, "").split(",");
+  description = description?.split(",");
+  if (buyers?.length !== gold?.length) {
+    sendCommandError(
+      interaction.user,
+      "Buyers + Gold must contain same amount of comma separated values."
+    );
+    return null;
+  }
+  if (buyers?.length !== description?.length) {
+    sendCommandError(
+      interaction.user,
+      "Buyers + Gold + Description must contain same amount of comma separated values."
+    );
+    return null;
+  }
+  for (let i = 0; i < buyers?.length; i++) {
+    if (buyers[i] !== "" && gold[i] !== "") {
+      if (isNaN(gold[i]) && isNaN(parseFloat(gold[i]))) {
+        sendCommandError(interaction.user, "Gold must contain numeric values.");
+        return null;
+      }
+      if (buyers[i].split("-").length !== 2) {
+        sendCommandError(interaction.user, "Buyers must be format Name-Realm.");
+        return null;
+      }
+    }
+  }
+  let newBuyers = [];
+  if (buyers) {
+    newBuyers = buyers.map((b, index) => ({
+      name: b,
+      gold: Number(gold[index]) / 1000.0,
+      description: description[index],
+    }));
+  }
+  return newBuyers;
 }
