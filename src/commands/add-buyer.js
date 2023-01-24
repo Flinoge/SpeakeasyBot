@@ -1,9 +1,10 @@
 import { SlashCommandBuilder } from "discord.js";
 import Run from "../models/run.js";
 import {
-  sendCommandError,
   findMessageInAdminChannel,
   formatBuyers,
+  messageToRun,
+  sendCommandConfirmation,
 } from "../utils/methods.js";
 import moment from "moment";
 
@@ -42,13 +43,19 @@ export default {
           "Buyer Descriptions Seperated by Commas (First Two,AOTC)"
         )
         .setRequired(true)
+    )
+    .addStringOption((option) =>
+      option
+        .setName("curatorcut")
+        .setDescription("If curator gets a cut Seperated by Commas (yes,no)")
+        .setRequired(true)
     ),
   async autocomplete(interaction) {
     const focusedOption = interaction.options.getFocused(true);
     const focusedValue = focusedOption.value;
     if (focusedOption.name === "run") {
       const pendingRuns = await Run.find({
-        status: { $not: "Done" },
+        status: { $not: new RegExp("Done") },
         type: "Raid",
       });
       let choices = pendingRuns.map((r) => ({
@@ -65,26 +72,32 @@ export default {
   },
   async execute(interaction) {
     const { runDB, message } = await messageToRun(
-      interaction.options.getString("run")
+      interaction.options.getString("run"),
+      interaction
     );
     if (!runDB || !message) {
       return;
     }
-    const adminMessage = findMessageInAdminChannel(runDB.settings.adminMessage);
+    const adminMessage = await findMessageInAdminChannel(
+      runDB.settings.adminMessage,
+      interaction
+    );
     if (!adminMessage) {
       return;
     }
-    let buyers = formatBuyers(
+    let buyers = await formatBuyers(
       interaction.options.getString("buyers"),
       interaction.options.getString("gold"),
-      interaction.options.getString("description")
+      interaction.options.getString("description"),
+      interaction.options.getString("curatorcut"),
+      interaction
     );
     if (!buyers) {
       return;
     }
     let messageEmbed = adminMessage.embeds[0];
     let buyerFields = messageEmbed.fields[0];
-    for (let i = 0; i < buyers.length; i++) {
+    for (let i = 0; i < buyers?.length; i++) {
       if (buyerFields.value === "None") {
         buyerFields.value = "";
       }
@@ -94,7 +107,8 @@ export default {
     }
     messageEmbed.fields[0] = buyerFields;
     runDB.settings.buyers = [...runDB.settings.buyers, ...buyers];
-    runDB.gold = runDB.gold + buyers.reduce((t, c) => t + c.gold, 0);
+    runDB.markModified("settings");
+    runDB.gold = runDB.gold + buyers?.reduce((t, c) => t + c.gold, 0);
     runDB.save();
     await adminMessage.edit({ embeds: [messageEmbed] });
     sendCommandConfirmation(

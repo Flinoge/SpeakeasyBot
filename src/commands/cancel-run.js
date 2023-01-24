@@ -42,7 +42,8 @@ export default {
   },
   async execute(interaction) {
     const { runDB, message } = await messageToRun(
-      interaction.options.getString("run")
+      interaction.options.getString("run"),
+      interaction
     );
     if (!runDB || !message) {
       return;

@@ -4,6 +4,7 @@ import { security } from "./constants.js";
 import Bank from "../models/bank.js";
 import User from "../models/user.js";
 import Run from "../models/run.js";
+import config from "../config.js";
 
 export function mentionToId(mention) {
   return mention.replace("<", "").replace(">", "").replace("@", "");
@@ -120,7 +121,7 @@ export async function availableServers() {
   return banks.map((b) => ({ server: b.server, amount: b.amount }));
 }
 
-export async function modifyBank(server, gold) {
+export async function modifyBank(server, gold, interaction) {
   let bank = await Bank.findOne({ server });
   if (!bank) {
     sendCommandError(
@@ -165,7 +166,7 @@ export async function findMessageInChannel(messageId, channel) {
   return message;
 }
 
-export async function findMessageInAdminChannel(messageId) {
+export async function findMessageInAdminChannel(messageId, interaction) {
   const channel = client.channels.cache.get(config.admin_channel);
   if (!channel) {
     sendCommandError(
@@ -185,16 +186,20 @@ export async function findMessageInAdminChannel(messageId) {
   return message;
 }
 
-export async function getChannelById(channelId) {
-  const channel = client.channels.cache.get(channelId);
+export async function getChannelById(channelId, interaction) {
+  const channel = await client.channels.cache.get(channelId);
   if (!channel) {
+    sendCommandError(
+      interaction.user,
+      "Channel specified does not exist in discord."
+    );
     return null;
   }
   return channel;
 }
 
-export async function runToMessage(run) {
-  channel = await getChannelById(run.channelId);
+export async function runToMessage(run, interaction) {
+  const channel = await getChannelById(run.channelId, interaction);
   if (!channel) {
     sendCommandError(
       interaction.user,
@@ -213,7 +218,7 @@ export async function runToMessage(run) {
   return message;
 }
 
-export async function messageToRun(messageId) {
+export async function messageToRun(messageId, interaction) {
   const runDB = await Run.findOne({ messageId });
   if (!runDB) {
     sendCommandError(
@@ -222,15 +227,22 @@ export async function messageToRun(messageId) {
     );
     return null;
   }
-  const message = await runToMessage(runDB);
+  const message = await runToMessage(runDB, interaction);
   if (!message) return null;
   return { message, runDB };
 }
 
-export async function formatBuyers(buyers, gold, description) {
+export async function formatBuyers(
+  buyers,
+  gold,
+  description,
+  curatorcut,
+  interaction
+) {
   buyers = buyers?.replace(/\s+/g, "").split(",");
   gold = gold?.replace(/\s+/g, "").split(",");
   description = description?.split(",");
+  curatorcut = curatorcut?.replace(/\s+/g, "").split(",");
   if (buyers?.length !== gold?.length) {
     sendCommandError(
       interaction.user,
@@ -241,7 +253,14 @@ export async function formatBuyers(buyers, gold, description) {
   if (buyers?.length !== description?.length) {
     sendCommandError(
       interaction.user,
-      "Buyers + Gold + Description must contain same amount of comma separated values."
+      "Buyers + Gold + Description + CuratorCut must contain same amount of comma separated values."
+    );
+    return null;
+  }
+  if (buyers?.length !== curatorcut?.length) {
+    sendCommandError(
+      interaction.user,
+      "Buyers + Gold + Description + CuratorCut must contain same amount of comma separated values."
     );
     return null;
   }
@@ -256,13 +275,23 @@ export async function formatBuyers(buyers, gold, description) {
         return null;
       }
     }
+    curatorcut[i] = curatorcut[i].toLowerCase();
+    if (curatorcut !== "no" && curatorcut !== "yes") {
+      sendCommandError(
+        interaction.user,
+        'CuratorCut must either be "yes" or "no".'
+      );
+      return null;
+    }
   }
-  let newBuyers = [];
+  let newBuyers;
   if (buyers) {
     newBuyers = buyers.map((b, index) => ({
       name: b,
       gold: Number(gold[index]) / 1000.0,
       description: description[index],
+      curatorcut: curatorcut[index],
+      curator: interaction.user.id,
     }));
   }
   return newBuyers;

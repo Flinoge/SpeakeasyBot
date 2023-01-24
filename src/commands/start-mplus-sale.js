@@ -142,7 +142,8 @@ export default {
   },
   async execute(interaction) {
     const { runDB, message } = await messageToRun(
-      interaction.options.getString("run")
+      interaction.options.getString("run"),
+      interaction
     );
     if (!runDB || !message) {
       return;
@@ -319,7 +320,7 @@ export default {
               embeds: [messageEmbed],
             });
             runDB.status = "Awaiting Approval";
-            const channel = getChannelById(config.admin_channel);
+            const channel = getChannelById(config.admin_channel, interaction);
             await runDB.save();
             const row = new ActionRowBuilder().addComponents(
               new ButtonBuilder()
@@ -342,7 +343,7 @@ export default {
           }
         })
         .catch((collected) => {
-          const channel = getChannelById(config.admin_channel);
+          const channel = getChannelById(config.admin_channel, interaction);
           const row = new ActionRowBuilder().addComponents(
             new ButtonBuilder()
               .setCustomId("complete-run")

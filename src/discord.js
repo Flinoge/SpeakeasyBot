@@ -22,6 +22,7 @@ const client = new Client({
 client.commands = new Collection();
 client.modals = new Collection();
 client.buttons = new Collection();
+client.reactions = new Collection();
 // Log in to Discord with your client's token
 client.login(config.token);
 export default client;
@@ -99,7 +100,16 @@ const registerAll = async () => {
     .filter((file) => file.endsWith(".js"));
   for (const file of modalFiles) {
     const modal = (await import(`./modals/${file}`)).default;
-    client.buttons.set(modal.data.name, modal);
+    client.modals.set(modal.data.name, modal);
+  }
+
+  /// Reactions Section
+  const reactionFiles = fs
+    .readdirSync("./src/reactions")
+    .filter((file) => file.endsWith(".js"));
+  for (const file of reactionFiles) {
+    const reaction = (await import(`./reactions/${file}`)).default;
+    client.reactions.set(reaction.data.name, reaction);
   }
 };
 

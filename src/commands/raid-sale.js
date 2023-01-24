@@ -9,10 +9,10 @@ import {
   availableServers,
   sendCommandError,
   getChannelById,
+  formatBuyers,
 } from "../utils/methods.js";
 import { security } from "../utils/constants.js";
 import moment from "moment";
-import Client from "../discord.js";
 import config from "../config.js";
 
 export default {
@@ -56,6 +56,11 @@ export default {
         .setDescription(
           "Buyer Descriptions Seperated by Commas (First Two,AOTC)"
         )
+    )
+    .addStringOption((option) =>
+      option
+        .setName("curatorcut")
+        .setDescription("If curator gets a cut Seperated by Commas (yes,no)")
     )
     .setDefaultMemberPermissions(
       PermissionFlagsBits[security.permissions.admin]
@@ -109,10 +114,12 @@ export default {
       );
       return;
     }
-    let buyers = formatBuyers(
+    let buyers = await formatBuyers(
       interaction.options.getString("buyers"),
       interaction.options.getString("gold"),
-      interaction.options.getString("description")
+      interaction.options.getString("description"),
+      interaction.options.getString("curatorcut"),
+      interaction
     );
     if (!buyers && interaction.options.getString("buyers")) {
       return;
@@ -168,9 +175,12 @@ export default {
       content: `<@&${raiderRole.id}>`,
       embeds: [messageEmbed],
     });
-    const channel = getChannelById(config.admin_channel);
+    const channel = await getChannelById(config.admin_channel, interaction);
+    if (!channel) {
+      return;
+    }
     const buyerFields = { name: "Buyers", value: "None" };
-    for (let i = 0; i < buyers.length; i++) {
+    for (let i = 0; i < buyers?.length; i++) {
       if (buyerFields.value === "None") {
         buyerFields.value = "";
       }
@@ -193,19 +203,19 @@ export default {
         iconURL: interaction.member.user.avatarURL(),
       });
     adminMessageEmbed.addFields([buyerFields]);
-    const adminMessage = channel.send({
+    const adminMessage = await channel.send({
       content: `${interaction.user.toString()} Raid is currently being signed up for. ${
         message.url
       }`,
       embeds: [adminMessageEmbed],
     });
     let settings = { date, buyers: [], adminMessage: adminMessage.id };
-    if (buyers) {
+    if (buyers?.length > 0) {
       settings.buyers = buyers;
     }
     let participants = [];
     let totalGold = 0;
-    if (buyers) {
+    if (buyers?.length > 0) {
       totalGold = buyers.reduce((t, c) => t + c.gold, 0);
     }
     await Run.create({
@@ -225,5 +235,20 @@ export default {
         id: interaction.user.id,
       },
     });
+    if (!dps || !healer || !tank) {
+      sendCommandError(
+        interaction.user,
+        "One or more emojis do not exist specified does not exist in system."
+      );
+      return;
+    }
+    try {
+      await message.react(tank);
+      await message.react(healer);
+      await message.react(dps);
+      await message.react(havekey);
+    } catch (e) {
+      console.log("Error Reacting on message.");
+    }
   },
 };
