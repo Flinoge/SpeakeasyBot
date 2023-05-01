@@ -180,6 +180,8 @@ export default {
         buyer,
         curatorcut,
       },
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
       createdBy: {
         username: interaction.user.username,
         id: interaction.user.id,

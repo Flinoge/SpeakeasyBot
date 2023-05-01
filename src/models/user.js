@@ -4,8 +4,8 @@ const Schema = new mongoose.Schema({
   id: { type: String, required: true },
   balance: { type: Number, required: true, default: 0 },
   settings: {
-    username: { type: String, required: true },
-    avatarURL: { type: String, required: true },
+    username: { type: String, required: false },
+    avatarURL: { type: String, required: false },
   },
   createdAt: { type: Date, required: true, default: Date.now() },
   createdBy: {
