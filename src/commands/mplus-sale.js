@@ -82,7 +82,7 @@ export default {
     let gold = interaction.options.getNumber("gold");
     gold = gold / 1000.0;
     const boosterCuts =
-      curatorcut === "yes" ? gold * cuts["M+"].booster : gold / 4;
+      curatorcut === "yes" ? (gold * cuts["M+"].booster) / 4 : gold / 4;
     let server = interaction.options.getString("server");
     const buyer = interaction.options.getString("buyer");
     const availability = interaction.options.getString("availability");
@@ -172,6 +172,7 @@ export default {
       server,
       participants: [],
       messageId: message.id,
+      channelId: message.channel.id,
       settings: {
         key,
         level,

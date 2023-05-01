@@ -18,7 +18,7 @@ export default {
   async execute(interaction) {
     let totalUsers = await User.find({ balance: { $gt: 0 } });
     totalUsers = totalUsers.length;
-    if(totalUsers === 0) {
+    if (totalUsers === 0) {
       const messageEmbed = new EmbedBuilder()
         .setColor(0x0099ff)
         .setTitle("No Active Balances :D")

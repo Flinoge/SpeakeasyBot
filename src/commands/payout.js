@@ -109,7 +109,7 @@ export default {
       },
     };
     await Transaction.create(transaction);
-    let bankModified = await modifyBank(server, gold * -1);
+    let bankModified = await modifyBank(server, gold * -1, interaction);
     if (!bankModified) {
       return;
     }

@@ -78,7 +78,7 @@ export default {
       );
       return;
     }
-    let bankModified = await modifyBank(runDB.server, runDB.gold);
+    let bankModified = await modifyBank(runDB.server, runDB.gold, interaction);
     if (!bankModified) {
       return;
     }

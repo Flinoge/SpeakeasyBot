@@ -2,21 +2,18 @@ import {
   SlashCommandBuilder,
   EmbedBuilder,
   PermissionFlagsBits,
-  ButtonBuilder,
-  ButtonStyle,
-  ModalBuilder,
-  TextInputBuilder,
-  TextInputStyle,
 } from "discord.js";
 import Run from "../models/run.js";
 import Bank from "../models/bank.js";
 import {
   availableServers,
   sendCommandError,
-  mentionToId,
+  getChannelById,
+  formatBuyers,
 } from "../utils/methods.js";
 import { security } from "../utils/constants.js";
 import moment from "moment";
+import config from "../config.js";
 
 export default {
   permission: "admin",
@@ -53,6 +50,18 @@ export default {
           "Buyer Gold Amounts Seperated by Commas (10000000,2000000)"
         )
     )
+    .addStringOption((option) =>
+      option
+        .setName("description")
+        .setDescription(
+          "Buyer Descriptions Seperated by Commas (First Two,AOTC)"
+        )
+    )
+    .addStringOption((option) =>
+      option
+        .setName("curatorcut")
+        .setDescription("If curator gets a cut Seperated by Commas (yes,no)")
+    )
     .setDefaultMemberPermissions(
       PermissionFlagsBits[security.permissions.admin]
     ),
@@ -84,8 +93,6 @@ export default {
   async execute(interaction) {
     let server = interaction.options.getString("server");
     const date = interaction.options.getString("date");
-    let buyers = interaction.options.getString("buyers")?.replace(/\s+/g, "");
-    let gold = interaction.options.getString("gold")?.replace(/\s+/g, "");
     let servers = await availableServers();
     let serverIndex = servers.find(
       (s) => s.server.toLowerCase() === server.toLowerCase()
@@ -107,13 +114,14 @@ export default {
       );
       return;
     }
-    buyers = buyers?.split(",");
-    gold = gold?.split(",");
-    if (buyers?.length !== gold?.length) {
-      sendCommandError(
-        interaction.user,
-        "Buyers + Gold must contain same amount of comma separated values."
-      );
+    let buyers = await formatBuyers(
+      interaction.options.getString("buyers"),
+      interaction.options.getString("gold"),
+      interaction.options.getString("description"),
+      interaction.options.getString("curatorcut"),
+      interaction
+    );
+    if (!buyers && interaction.options.getString("buyers")) {
       return;
     }
     let messageEmbed = new EmbedBuilder()
@@ -135,30 +143,7 @@ export default {
       { name: "Tank", value: "None", inline: true },
       { name: "Healer", value: "None", inline: true },
       { name: "DPS", value: "None", inline: true },
-      // { name: "Buyers", value: "None" },
     ];
-    for (let i = 0; i < buyers?.length; i++) {
-      if (buyers[i] !== "" && gold[i] !== "") {
-        if (isNaN(gold[i]) && isNaN(parseFloat(gold[i]))) {
-          sendCommandError(
-            interaction.user,
-            "Gold must contain numeric values."
-          );
-          return;
-        }
-        if (buyers[i].split("-").length !== 2) {
-          sendCommandError(
-            interaction.user,
-            "Buyers must be format Name-Realm."
-          );
-          return;
-        }
-        // Not sure if we want to display this honestly
-        // fields[1].value += `${i === 0 ? "" : ", "}${buyers[i]}:${
-        //   Number(gold[i]) / 1000.0
-        // }k`;
-      }
-    }
     messageEmbed.addFields(fields);
     const raiderRole = await interaction.guild.roles.cache.find(
       (role) => role.name === "Raider"
@@ -190,17 +175,48 @@ export default {
       content: `<@&${raiderRole.id}>`,
       embeds: [messageEmbed],
     });
-    let settings = { date, buyers: [] };
-    if (buyers) {
-      settings.buyers = buyers.map((b, index) => ({
-        name: b,
-        gold: gold[index] / 1000.0,
-      }));
+    const channel = await getChannelById(config.admin_channel, interaction);
+    if (!channel) {
+      return;
+    }
+    const buyerFields = { name: "Buyers", value: "None" };
+    for (let i = 0; i < buyers?.length; i++) {
+      if (buyerFields.value === "None") {
+        buyerFields.value = "";
+      }
+      buyerFields.value += `${buyerFields.value === "" ? "" : ", "}${
+        buyers[i].name
+      }:${buyers[i].gold}k`;
+    }
+    let adminMessageEmbed = new EmbedBuilder()
+      .setColor(0x0099ff)
+      .setTitle("Raid Sale")
+      .setDescription(`Run at: ${date} EST`)
+      .setAuthor({
+        name: interaction.member.user.tag,
+        iconURL: interaction.member.user.avatarURL(),
+      })
+      .setThumbnail(interaction.member.user.avatarURL())
+      .setTimestamp()
+      .setFooter({
+        text: "Use this to track buyers.",
+        iconURL: interaction.member.user.avatarURL(),
+      });
+    adminMessageEmbed.addFields([buyerFields]);
+    const adminMessage = await channel.send({
+      content: `${interaction.user.toString()} Raid is currently being signed up for. ${
+        message.url
+      }`,
+      embeds: [adminMessageEmbed],
+    });
+    let settings = { date, buyers: [], adminMessage: adminMessage.id };
+    if (buyers?.length > 0) {
+      settings.buyers = buyers;
     }
     let participants = [];
     let totalGold = 0;
-    if (gold) {
-      totalGold = gold.reduce((t, c) => t + Number(c) / 1000.0, 0);
+    if (buyers?.length > 0) {
+      totalGold = buyers.reduce((t, c) => t + c.gold, 0);
     }
     await Run.create({
       type: "Raid",
@@ -208,6 +224,7 @@ export default {
       server,
       participants,
       messageId: message.id,
+      channelId: message.channel.id,
       settings,
       createdBy: {
         username: interaction.user.username,
@@ -218,5 +235,20 @@ export default {
         id: interaction.user.id,
       },
     });
+    if (!dps || !healer || !tank) {
+      sendCommandError(
+        interaction.user,
+        "One or more emojis do not exist specified does not exist in system."
+      );
+      return;
+    }
+    try {
+      await message.react(tank);
+      await message.react(healer);
+      await message.react(dps);
+      await message.react(havekey);
+    } catch (e) {
+      console.log("Error Reacting on message.");
+    }
   },
 };

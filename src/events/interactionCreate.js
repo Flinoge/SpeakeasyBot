@@ -110,7 +110,7 @@ export default {
       }
     } else if (interaction.isModalSubmit()) {
       // Is a modal submit
-      const modal = interaction.client.buttons.get(interaction.customId);
+      const modal = interaction.client.modals.get(interaction.customId);
 
       if (!modal) {
         console.error(`No command matching ${interaction.customId} was found.`);

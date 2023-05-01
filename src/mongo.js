@@ -36,6 +36,18 @@ if (config.env !== "production") {
   process.once("SIGINT", async function () {
     await disconnect();
   });
+  process.on("SIGTERM", async () => {
+    await disconnect();
+  });
+  process.on("SIGUSR1", async () => {
+    await disconnect();
+  });
+  process.on("SIGUSR2", async () => {
+    await disconnect();
+  });
+  process.on("uncaughtException", async () => {
+    await disconnect();
+  });
 }
 export async function loadTestData(fileLocation) {
   if (config.env !== "production") {
