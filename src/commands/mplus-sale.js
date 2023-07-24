@@ -106,10 +106,10 @@ export default {
       .setColor(0x0099ff)
       .setTitle("M+ Sale")
       .setAuthor({
-        name: interaction.member.user.tag,
-        iconURL: interaction.member.user.avatarURL(),
+        name: interaction.member?.user?.tag,
+        iconURL: interaction.member?.user?.avatarURL(),
       })
-      .setThumbnail(interaction.member.user.avatarURL())
+      .setThumbnail(interaction.member?.user?.avatarURL())
       .addFields(
         {
           name: `${key ? `${key} ` : ""}+${level} `,

@@ -209,9 +209,9 @@ export default {
       .setTitle("M+ Sale")
       .setAuthor({
         name: interaction.member.user.tag,
-        iconURL: interaction.member.user.avatarURL(),
+        iconURL: interaction.member.user.avatarURL() || "",
       })
-      .setThumbnail(interaction.member.user.avatarURL())
+      .setThumbnail(interaction.member.user.avatarURL() || "")
       .addFields(
         {
           name: `${runDB.settings.key ? `${runDB.settings.key} ` : ""}+${
@@ -229,7 +229,7 @@ export default {
       .setTimestamp()
       .setFooter({
         text: "React when run is done.",
-        iconURL: interaction.member.user.avatarURL(),
+        iconURL: interaction.member.user.avatarURL() || "",
       });
     if (keyholder) {
       messageEmbed.addFields({
@@ -282,9 +282,9 @@ export default {
               .setTitle("M+ Sale")
               .setAuthor({
                 name: interaction.member.user.tag,
-                iconURL: interaction.member.user.avatarURL(),
+                iconURL: interaction.member.user.avatarURL() || "",
               })
-              .setThumbnail(interaction.member.user.avatarURL())
+              .setThumbnail(interaction.member.user.avatarURL() || "")
               .addFields(
                 {
                   name: `${
@@ -306,7 +306,7 @@ export default {
               .setTimestamp()
               .setFooter({
                 text: `This has been marked done by ${interaction.member.user.tag} and is awaiting approval.`,
-                iconURL: interaction.member.user.avatarURL(),
+                iconURL: interaction.member.user.avatarURL() || "",
               });
             if (keyholder) {
               messageEmbed.addFields({

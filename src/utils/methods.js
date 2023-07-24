@@ -42,10 +42,10 @@ export async function sendBalanceUpdate(user, runDB, cut) {
     .setTitle("Payment Notification")
     .setDescription(`Your new balance is: ${user.balance}k.`)
     .setAuthor({
-      name: client.user.username,
-      iconURL: client.user.avatarURL(),
+      name: client.user?.username,
+      iconURL: client.user?.avatarURL() || "",
     })
-    .setThumbnail(client.user.avatarURL())
+    .setThumbnail(client.user.avatarURL() || "")
     .addFields({
       name: `${runDB.type}`,
       value: `${cut}k cuts`,
@@ -53,7 +53,7 @@ export async function sendBalanceUpdate(user, runDB, cut) {
     .setTimestamp()
     .setFooter({
       text: "Thank you for all you do!",
-      iconURL: client.user.avatarURL(),
+      iconURL: client.user.avatarURL() || "",
     });
   client.users.send(user.id, { embeds: [messageEmbed] });
 }
@@ -65,9 +65,9 @@ export async function sendPaymentUpdate(user, gold) {
     .setDescription(`Your new balance is: ${user.balance}k.`)
     .setAuthor({
       name: client.user.username,
-      iconURL: client.user.avatarURL(),
+      iconURL: client.user.avatarURL() || "",
     })
-    .setThumbnail(client.user.avatarURL())
+    .setThumbnail(client.user.avatarURL() || "")
     .addFields({
       name: `Balance Change`,
       value: `Balance changed by: ${gold}k.`,
@@ -87,13 +87,13 @@ export async function sendCommandConfirmation(user, command) {
     .setDescription(`Command: ${command} has been completed.`)
     .setAuthor({
       name: client.user.username,
-      iconURL: client.user.avatarURL(),
+      iconURL: client.user.avatarURL() || "",
     })
-    .setThumbnail(client.user.avatarURL())
+    .setThumbnail(client.user.avatarURL() || "")
     .setTimestamp()
     .setFooter({
       text: "Done and Done",
-      iconURL: client.user.avatarURL(),
+      iconURL: client.user.avatarURL() || "",
     });
   client.users.send(user.id, { embeds: [messageEmbed] });
 }
@@ -105,13 +105,13 @@ export async function sendCommandError(user, error) {
     .setDescription(`Command: ${error}.`)
     .setAuthor({
       name: client.user.username,
-      iconURL: client.user.avatarURL(),
+      iconURL: client.user.avatarURL() || "",
     })
-    .setThumbnail(client.user.avatarURL())
+    .setThumbnail(client.user.avatarURL() || "")
     .setTimestamp()
     .setFooter({
       text: "Big Oof",
-      iconURL: client.user.avatarURL(),
+      iconURL: client.user.avatarURL() || "",
     });
   client.users.send(user.id, { embeds: [messageEmbed] });
 }
@@ -143,7 +143,7 @@ export async function checkMember(user) {
       balance: 0,
       settings: {
         username: user.username,
-        avatarURL: user.avatarURL(),
+        avatarURL: user.avatarURL() || "",
       },
       createdBy: {
         username: user.username,
