@@ -129,7 +129,7 @@ export default {
       .setTitle("Raid Sale")
       .setDescription(`Run at: ${date} EST`)
       .setAuthor({
-        name: interaction.member.user.tag,
+        name: interaction.member.user.username,
         iconURL: interaction.member.user.avatarURL(),
       })
       .setThumbnail(interaction.member.user.avatarURL())
@@ -193,7 +193,7 @@ export default {
       .setTitle("Raid Sale")
       .setDescription(`Run at: ${date} EST`)
       .setAuthor({
-        name: interaction.member.user.tag,
+        name: interaction.member.user.username,
         iconURL: interaction.member.user.avatarURL(),
       })
       .setThumbnail(interaction.member.user.avatarURL())

@@ -52,7 +52,7 @@ export default {
       .setColor(0x0099ff)
       .setTitle("M+ Sale")
       .setAuthor({
-        name: interaction.member.user.tag,
+        name: interaction.member.user.username,
         iconURL: interaction.member.user.avatarURL(),
       })
       .setThumbnail(interaction.member.user.avatarURL())

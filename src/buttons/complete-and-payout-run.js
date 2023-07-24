@@ -27,7 +27,7 @@ export default {
     }
     // Mark as Running
     await message.edit({
-      content: `This run is being approved and paid out by ${interaction.user.tag}. ${run.url}`,
+      content: `This run is being approved and paid out by ${interaction.user.username}. ${run.url}`,
       components: [],
     });
     if (!hasPermission(interaction, security.permissions.admin)) {
@@ -141,7 +141,7 @@ export default {
       await Transaction.create(transactions[i]);
     }
     message.edit({
-      content: `This run has been marked as approved and paid out by ${interaction.user.tag}. ${run.url}`,
+      content: `This run has been marked as approved and paid out by ${interaction.user.username}. ${run.url}`,
       components: [],
     });
   },

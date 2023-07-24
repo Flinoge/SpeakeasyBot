@@ -1,5 +1,5 @@
 import { Events } from "discord.js";
-import { trackedEmojis } from "../utils/constants";
+import { trackedEmojis } from "../utils/constants.js";
 import client from "../discord.js";
 
 export default {

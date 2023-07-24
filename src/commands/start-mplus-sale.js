@@ -13,6 +13,7 @@ import {
   checkMember,
   sendCommandError,
   getChannelById,
+  messageToRun,
 } from "../utils/methods.js";
 import config from "../config.js";
 import Client from "../discord.js";
@@ -208,7 +209,7 @@ export default {
       .setColor(0x0099ff)
       .setTitle("M+ Sale")
       .setAuthor({
-        name: interaction.member.user.tag,
+        name: interaction.member.user.username,
         iconURL: interaction.member.user.avatarURL() || "",
       })
       .setThumbnail(interaction.member.user.avatarURL() || "")
@@ -281,7 +282,7 @@ export default {
               .setColor(0x0099ff)
               .setTitle("M+ Sale")
               .setAuthor({
-                name: interaction.member.user.tag,
+                name: interaction.member.user.username,
                 iconURL: interaction.member.user.avatarURL() || "",
               })
               .setThumbnail(interaction.member.user.avatarURL() || "")
@@ -305,7 +306,7 @@ export default {
               )
               .setTimestamp()
               .setFooter({
-                text: `This has been marked done by ${interaction.member.user.tag} and is awaiting approval.`,
+                text: `This has been marked done by ${interaction.member.user.username} and is awaiting approval.`,
                 iconURL: interaction.member.user.avatarURL() || "",
               });
             if (keyholder) {

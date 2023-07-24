@@ -29,7 +29,7 @@ export default {
     }
     // Mark as Running
     await message.edit({
-      content: `This run is being approved by ${interaction.user.tag}. ${run.url}`,
+      content: `This run is being approved by ${interaction.user.username}. ${run.url}`,
       components: [],
     });
     if (!hasPermission(interaction, security.permissions.admin)) {
@@ -104,7 +104,7 @@ export default {
       sendBalanceUpdate(curator, runDB, curatorCut);
     }
     message.edit({
-      content: `This run has been marked as approved by ${interaction.user.tag}. ${run.url}`,
+      content: `This run has been marked as approved by ${interaction.user.username}. ${run.url}`,
       components: [],
     });
   },
