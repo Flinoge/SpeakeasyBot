@@ -187,7 +187,7 @@ export async function findMessageInAdminChannel(messageId, interaction) {
 }
 
 export async function getChannelById(channelId, interaction) {
-  const channel = await client.channels.cache.get(channelId);
+  const channel = await client.channels.fetch(channelId);
   if (!channel) {
     sendCommandError(
       interaction.user,

@@ -49,7 +49,7 @@ export default {
 
       if (!command) {
         console.error(
-          `No command matching ${interaction.commandName} was found.`
+          `No Autocomplete matching ${interaction.commandName} was found.`
         );
         return;
       }
@@ -79,10 +79,12 @@ export default {
       }
     } else if (interaction.isButton()) {
       // Is a button press
-      const button = interaction.client.buttons.get(interaction.customId);
+      const button = await interaction.client.buttons.get(
+        interaction.customId ? interaction.customId : ""
+      );
 
       if (!button) {
-        console.error(`No command matching ${interaction.customId} was found.`);
+        console.error(`No Button matching ${interaction.customId} was found.`);
         return;
       }
 
@@ -113,7 +115,7 @@ export default {
       const modal = interaction.client.modals.get(interaction.customId);
 
       if (!modal) {
-        console.error(`No command matching ${interaction.customId} was found.`);
+        console.error(`No Modal matching ${interaction.customId} was found.`);
         return;
       }
 

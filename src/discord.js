@@ -25,6 +25,10 @@ client.buttons = new Collection();
 client.reactions = new Collection();
 // Log in to Discord with your client's token
 client.login(config.token);
+// client.on("debug", console.log);
+client.on("unhandledRejection", (error) => {
+  console.error("Unhandled promise rejection:", error);
+});
 export default client;
 
 const registerAll = async () => {
