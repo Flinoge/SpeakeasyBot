@@ -11,7 +11,16 @@ export default {
         // Make sure its only reactions we care about
         let trackedRun = await Run.findOne({
           messageId: reaction.message.id,
+        }).catch((e) => {
+          return null;
         });
+        if (!trackedRun) {
+          sendCommandError(
+            interaction.user,
+            "Run specified does not exist in system."
+          );
+          return;
+        }
         if (trackedRun) {
           // Make sure the message is a run that is tracked
           const reactionReact = client.reactions.get(trackedRun.type);

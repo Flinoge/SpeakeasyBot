@@ -18,6 +18,8 @@ export default {
       run = await run.messages.fetch(content[6]);
       const runDB = await Run.findOne({
         messageId: run.id,
+      }).catch((e) => {
+        return null;
       });
       if (!runDB) {
         sendCommandError(
@@ -127,7 +129,16 @@ export default {
       // Make sure it doesnt get ran 2 times
       const doubleCheck = await Run.findOne({
         messageId: run.id,
+      }).catch((e) => {
+        return null;
       });
+      if (!doubleCheck) {
+        sendCommandError(
+          interaction.user,
+          "Run specified does not exist in system."
+        );
+        return;
+      }
       if (doubleCheck.status === "Done") {
         sendCommandError(
           interaction.user,

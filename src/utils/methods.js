@@ -219,7 +219,9 @@ export async function runToMessage(run, interaction) {
 }
 
 export async function messageToRun(messageId, interaction) {
-  const runDB = await Run.findOne({ messageId });
+  const runDB = await Run.findOne({ messageId }).catch((e) => {
+    return null;
+  });
   if (!runDB) {
     sendCommandError(
       interaction.user,
