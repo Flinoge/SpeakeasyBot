@@ -266,6 +266,7 @@ export default {
       await runDB.save();
       await message.reactions.removeAll();
       await message.react("✅");
+      await message.channel.send(`${tank}, ${healer}, ${dps1}, ${dps2} Login :D`)
       const filter = (reaction, user) => {
         return (
           ["✅"].includes(reaction.emoji.name) &&
