@@ -20,7 +20,6 @@ export default {
       return;
     }
     let messageEmbed = message.embeds[0];
-    console.log(messageEmbed);
     let field = messageEmbed?.fields.find(
       (f) => f.name.toLowerCase() === reaction.emoji.name.toLowerCase()
     );
