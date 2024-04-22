@@ -1,4 +1,4 @@
-import { SlashCommandBuilder } from "discord.js";
+import { SlashCommandBuilder, EmbedBuilder } from "discord.js";
 import Run from "../models/run.js";
 import {
   findMessageInAdminChannel,
@@ -103,14 +103,19 @@ export default {
       }
       buyerFields.value += `${buyerFields.value === "" ? "" : ", "}${
         buyers[i].name
-      }:${buyers[i].gold}k`;
+      } : ${buyers[i].gold}k (${buyers[i].description})`;
     }
     messageEmbed.fields[0] = buyerFields;
     runDB.settings.buyers = [...runDB.settings.buyers, ...buyers];
     runDB.markModified("settings");
     runDB.gold = runDB.gold + buyers?.reduce((t, c) => t + c.gold, 0);
     runDB.save();
-    await adminMessage.edit({ embeds: [messageEmbed] });
+    let newEmbed = EmbedBuilder.from(messageEmbed).setTitle(
+      `Raid Sale (${runDB.gold}k)`
+    );
+    await adminMessage.edit({
+      embeds: [newEmbed],
+    });
     sendCommandConfirmation(
       interaction.user,
       `Adding buyers ${buyers.reduce(

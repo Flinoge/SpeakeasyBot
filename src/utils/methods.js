@@ -278,7 +278,7 @@ export async function formatBuyers(
       }
     }
     curatorcut[i] = curatorcut[i].toLowerCase();
-    if (curatorcut !== "no" && curatorcut !== "yes") {
+    if (curatorcut[i] !== "no" && curatorcut[i] !== "yes") {
       sendCommandError(
         interaction.user,
         'CuratorCut must either be "yes" or "no".'

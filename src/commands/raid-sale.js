@@ -246,7 +246,6 @@ export default {
       await message.react(tank);
       await message.react(healer);
       await message.react(dps);
-      await message.react(havekey);
     } catch (e) {
       console.log("Error Reacting on message.");
     }
